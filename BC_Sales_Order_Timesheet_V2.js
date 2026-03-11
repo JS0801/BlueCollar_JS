@@ -856,9 +856,9 @@ define([
 
       + '<td colspan="2" style="width:49%; vertical-align:top;">'
       + '<table style="width:100%; border-collapse:collapse;">'
-      + '<tr><td class="info-header" colspan="2">Project:</td><td colspan="3" style="border:1px solid #000;">' + esc(h.reportingProject) + '</td></tr>'
-      + '<tr><td class="info-header" colspan="2">C2O Job:</td><td colspan="3" style="border:1px solid #000;">' + esc(h.projectName) + '</td></tr>'
-      + '<tr><td class="info-header" colspan="2">Supervisor:</td><td colspan="3" style="border:1px solid #000;">' + esc(h.supervisor) + '</td></tr>'
+      + '<tr><td class="info-header" colspan="2">Project:</td><td colspan="4" style="border:1px solid #000;">' + esc(h.reportingProject) + '</td></tr>'
+      + '<tr><td class="info-header" colspan="2">C2O Job:</td><td colspan="4" style="border:1px solid #000;">' + esc(h.projectName) + '</td></tr>'
+      + '<tr><td class="info-header" colspan="2">Supervisor:</td><td colspan="4" style="border:1px solid #000;">' + esc(h.supervisor) + '</td></tr>'
       + '<tr><td class="info-header" colspan="2">Start Time: Monday – Friday</td><td style="border:1px solid #000;">' + esc(h.startTime) + '</td><td class="info-header" colspan="2">Finish Time:</td><td style="border:1px solid #000;">' + esc(h.endTime) + '</td></tr>'
       + '<tr><td class="info-header" colspan="2">Start Time: Weekend / Holiday</td><td style="border:1px solid #000;">' + esc(h.startTime) + '</td><td class="info-header" colspan="2">Finish Time:</td><td style="border:1px solid #000;">' + esc(h.endTime) + '</td></tr>'
       + '</table>'
