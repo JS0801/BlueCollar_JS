@@ -11,11 +11,69 @@ define(['N/ui/serverWidget', 'N/url', 'N/search', 'N/record'], function(ui, url,
       var current_rec = context.newRecord;
       var recordId = context.newRecord.id;
       var subid = current_rec.getValue('subsidiary');
-      var relatedSO = current_rec.getValue('custbody_associated_sales_orders');
-      log.debug('relatedSO', relatedSO)
-      if (relatedSO && relatedSO.length > 0) relatedSO = relatedSO.join(',') + ',' + recordId;
-      else relatedSO = recordId;
-      log.debug('relatedSO', relatedSO)
+      var trandate = current_rec.getValue('trandate');
+      var internalIdString = null;
+
+
+      const salesorderSearchObj = search.create({
+    type: "salesorder",
+    settings: [{ "name": "consolidationtype", "value": "ACCTTYPE" }],
+    filters: [
+        ["type", "anyof", "SalesOrd"],
+        "AND",
+        ["internalid", "anyof", "7282"],
+        "AND",
+        ["mainline", "is", "T"]
+    ],
+    columns: [
+        search.createColumn({
+            name: "internalid",
+            join: "CUSTBODY_ASSOCIATED_SALES_ORDERS",
+            label: "Internal ID"
+        }),
+        search.createColumn({
+            name: "trandate",
+            join: "CUSTBODY_ASSOCIATED_SALES_ORDERS",
+            label: "Date",
+            sort: search.Sort.ASC
+        })
+    ]
+});
+
+const results = [];
+salesorderSearchObj.run().each(function (result) {
+    const id = result.getValue({
+        name: "internalid",
+        join: "CUSTBODY_ASSOCIATED_SALES_ORDERS"
+    });
+    const date = result.getValue({
+        name: "trandate",
+        join: "CUSTBODY_ASSOCIATED_SALES_ORDERS"
+    });
+    results.push({ id: id, date: new Date(date) });
+    return true;
+});
+
+      if (results.length == 0) {
+        internalIdString = recordId;
+      }else{
+        results.push({ id: recordId, date: new Date(trandate) });
+        results.sort(function (a, b) {
+            return a.date - b.date;
+        });
+
+        internalIdString = results.map(function (entry) {
+            return entry.id;
+        }).join(',');
+      }
+
+
+log.debug('Sorted Internal IDs', internalIdString);
+      // var relatedSO = current_rec.getValue('custbody_associated_sales_orders');
+      // log.debug('relatedSO', relatedSO)
+      // if (relatedSO && relatedSO.length > 0) relatedSO = relatedSO.join(',') + ',' + recordId;
+      // else relatedSO = recordId;
+      // log.debug('relatedSO', relatedSO)
       
       // Add a custom button to the form
       if (current_rec.type == 'salesorder') {
@@ -47,7 +105,7 @@ define(['N/ui/serverWidget', 'N/url', 'N/search', 'N/record'], function(ui, url,
           </div>';\
           document.body.appendChild(o);\
           var st=document.createElement('style'); st.id='csvOverlayStyle'; st.textContent='@keyframes csvspin{to{transform:rotate(360deg)}}'; document.head.appendChild(st);\
-          var url='" + scriptUrl + "&export=excel&tranid=" + relatedSO + "';\
+          var url='" + scriptUrl + "&export=excel&tranid=" + internalIdString + "';\
           var d=new Date(), yyyy=d.getFullYear(), mm=('0'+(d.getMonth()+1)).slice(-2), dd=('0'+d.getDate()).slice(-2);\
           var filename='Weekly_Timesheet_'+yyyy+'-'+mm+'-'+dd+'_" + recordId + ".xls';\
           var failTimer=setTimeout(rm,4000); /* failsafe cleanup */ \
