@@ -21,7 +21,7 @@ define(['N/ui/serverWidget', 'N/url', 'N/search', 'N/record'], function(ui, url,
     filters: [
         ["type", "anyof", "SalesOrd"],
         "AND",
-        ["internalid", "anyof", "7282"],
+        ["internalid", "anyof", recordId],
         "AND",
         ["mainline", "is", "T"]
     ],
