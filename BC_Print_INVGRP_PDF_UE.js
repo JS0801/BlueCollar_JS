@@ -54,7 +54,7 @@ salesorderSearchObj.run().each(function (result) {
     return true;
 });
 
-      log.debug('results', results)
+   //   log.debug('results', results)
 
       if (results.length == 0) {
         internalIdString = recordId;
