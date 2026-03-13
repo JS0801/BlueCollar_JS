@@ -868,7 +868,7 @@ define([
       + '</tr>'
       + '</table>'
       + '<br/><br/><br/>';
-
+    log.debug('LaborMap', x.Labor)
     if (x.Labor) {
       html += '<table>'
         + '<tr>'
