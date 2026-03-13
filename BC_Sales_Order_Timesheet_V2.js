@@ -1186,7 +1186,7 @@ define([
 
   function formatCurrency(amount) {
     if (isNaN(amount)) return '';
-    if (amount.indexOf('$') != -1) return amount;
+    if (String(amount).indexOf('$') != -1) return amount;
     return '$ ' + parseFloat(amount).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   }
 
