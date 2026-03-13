@@ -166,7 +166,9 @@ define([
 
       for (var i = 0; i < lineCount; i++) {
         var categoryId = so.getSublistText({ sublistId: 'item', fieldId: 'custcol_invoicing_category', line: i });
-        if (!categoryId) continue;
+        var relatedTimeId = so.getSublistValue({ sublistId: 'item', fieldId: 'custcol_bc_tm_time_bill', line: i });
+        var relatedTranId = so.getSublistValue({ sublistId: 'item', fieldId: 'custcol_bc_tm_source_transaction', line: i });
+        if (!categoryId && relatedTimeId && relatedTranId) continue;
 
         var lineAmt = parseFloat(so.getSublistValue({ sublistId: 'item', fieldId: 'amount', line: i }) || 0) || 0;
         var qtyVal = so.getSublistValue({ sublistId: 'item', fieldId: 'quantity', line: i });
@@ -912,8 +914,8 @@ define([
   }
 
   html += '<td>' + openTag + labor[q].totalWeek + closeTag + '</td>'
-    + '<td>' + openTag + labor[q].rate + closeTag + '</td>'
-    + '<td>' + openTag + labor[q].amt + closeTag + '</td>'
+    + '<td>' + formatCurrency(openTag + labor[q].rate + closeTag) + '</td>'
+    + '<td>' + formatCurrency(openTag + labor[q].amt + closeTag) + '</td>'
     + '<td colspan="' + (12 - labor[q].days.length) + '"></td>'
     + '</tr>';
 }
@@ -984,8 +986,8 @@ define([
             + '<td colspan="3">' + m.mainName + '</td>'
             + '<td colspan="2">' + m.cleanedPO + '</td>'
             + '<td colspan="8">' + m.memo + '</td>'
-            + '<td align="right">' + m.cost + '</td>'
-            + '<td align="right">' + m.amount + '</td>'
+            + '<td align="right">' + formatCurrency(m.cost) + '</td>'
+            + '<td align="right">' + formatCurrency(m.amount) + '</td>'
             + '</tr>';
         }
       }
@@ -1018,8 +1020,8 @@ define([
             + '<td colspan="5">' + e.expCat + '</td>'
             + '<td colspan="2">' + e.cleanedPO + '</td>'
             + '<td colspan="8">' + e.memo + '</td>'
-            + '<td align="right">' + e.cost + '</td>'
-            + '<td align="right">' + e.amount + '</td>'
+            + '<td align="right">' + formatCurrency(e.cost) + '</td>'
+            + '<td align="right">' + formatCurrency(e.amount) + '</td>'
             + '</tr>';
         }
       }
