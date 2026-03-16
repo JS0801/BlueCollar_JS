@@ -196,7 +196,7 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/file', 'N/encode', 'N/runti
             totalRow.days.push({ date: date, hours: dateSum.toFixed(2) });
             totalRow.totalWeek = parseFloat(totalRow.totalWeek) + parseFloat(dateSum);
           });
-          totalRow.totalWeek = parseFloat(totalRow.totalWeek);
+          totalRow.totalWeek = parseFloat(totalRow.totalWeek).toFixed(2);
           
           // Final group with header + sorted data + total row
           groupedFinalArray[group] = [header, ...sortedGroup, totalRow];
