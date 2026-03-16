@@ -193,10 +193,10 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/file', 'N/encode', 'N/runti
                 dateSum += parseFloat(day.hours || 0)  ;
               }
             });
-            totalRow.days.push({ date: date, hours: dateSum.toFixed(1) });
+            totalRow.days.push({ date: date, hours: dateSum.toFixed(2) });
             totalRow.totalWeek = parseFloat(totalRow.totalWeek) + parseFloat(dateSum);
           });
-          totalRow.totalWeek = parseFloat(totalRow.totalWeek).toFixed(1);
+          totalRow.totalWeek = parseFloat(totalRow.totalWeek);
           
           // Final group with header + sorted data + total row
           groupedFinalArray[group] = [header, ...sortedGroup, totalRow];
