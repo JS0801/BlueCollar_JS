@@ -139,7 +139,7 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/file', 'N/encode', 'N/runti
             shiftType: emp.shiftType.replace(/&/g, '&amp;'),
             shift: emp.shift.replace(/&/g, '&amp;'),
             days: [],
-            totalWeek: emp.totalWeek.toFixed(1),
+            totalWeek: emp.totalWeek.toFixed(2),
             notes: emp.notes.replace(/&/g, '&amp;'),
             groupType: emp.groupType.replace(/&/g, '&amp;')
           };
