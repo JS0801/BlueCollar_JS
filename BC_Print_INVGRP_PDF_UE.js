@@ -46,11 +46,14 @@ salesorderSearchObj.run().each(function (result) {
         name: "internalid",
         join: "CUSTBODY_ASSOCIATED_SALES_ORDERS"
     });
+  if (id) {
     const date = result.getValue({
         name: "trandate",
         join: "CUSTBODY_ASSOCIATED_SALES_ORDERS"
     });
     results.push({ id: id, date: new Date(date) });
+  }
+    
     return true;
 });
 
