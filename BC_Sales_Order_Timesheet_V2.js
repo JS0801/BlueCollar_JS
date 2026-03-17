@@ -431,6 +431,7 @@ define([
     var uniqueDates = {};
 
     salesorderSearchObj.run().each(function (result) {
+      log.debug('result', result)
       var billRentalRole = result.getValue({ name: 'memo', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' });
       billRentalRole = (billRentalRole === '- None -' || !billRentalRole) ? '' : billRentalRole;
 
@@ -668,7 +669,7 @@ define([
     var tranFinalArray = {};
 
     transactionSearch.run().each(function (result) {
-      log.debug('result', result)
+      
       var invoicingCategory = result.getText({
         name: 'custcol_invoicing_category',
         summary: 'GROUP'
