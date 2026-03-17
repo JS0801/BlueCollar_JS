@@ -668,6 +668,7 @@ define([
     var tranFinalArray = {};
 
     transactionSearch.run().each(function (result) {
+      log.debug('result', result)
       var invoicingCategory = result.getText({
         name: 'custcol_invoicing_category',
         summary: 'GROUP'
