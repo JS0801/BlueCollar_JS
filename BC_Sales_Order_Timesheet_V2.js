@@ -357,10 +357,11 @@ define([
     };
 
     var groupedFinalArray = buildTimesheetHourGroups(soId, empNameArr, replaceLabor);
+    log.debug('groupedFinalArray', groupedFinalArray)
     groupedFinalArray = mergeTimesheetSourceTransactionGroups(soId, groupedFinalArray, replaceLabor);
-
+log.debug('groupedFinalArray', groupedFinalArray)
     var legendArray = buildLegendArray(groupedFinalArray, replaceLabor);
-
+log.debug('legendArray', legendArray)
     return {
       soId: soId,
       replaceLabor: replaceLabor,
