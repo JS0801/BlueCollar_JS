@@ -371,6 +371,7 @@ define([
   }
 
   function buildTimesheetHourGroups(soId, empNameArr, replaceLabor) {
+    log.debug('soId', soId)
     var shiftSortOrder = ['ST', 'OT', 'OT1.5', 'DT', 'NT', 'RDO'];
     var salesorderSearchObj = search.create({
       type: 'salesorder',
