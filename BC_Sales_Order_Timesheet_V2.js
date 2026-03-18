@@ -189,7 +189,7 @@ define([
       }
     }
 
-    var categoryLines = [];
+    var rowsHtml = '';
     var subTotalExTax = 0;
     var totalTax = 0;
     var categories = Object.keys(catMap).sort();
@@ -203,20 +203,82 @@ define([
       subTotalExTax += amt;
       totalTax += txa;
 
-      categoryLines.push({
-        description: esc(cat),
-        amount: amt,
-        taxRate: txr,
-        taxAmount: Math.abs(txa)
-      });
+      rowsHtml += ''
+        + '<tr>'
+        + '<td colspan="8" style="border-right:0px; border-top:0px; border-bottom:1px solid #C9C9C9;">' + esc(cat) + '</td>'
+        + '<td colspan="2" style="border-right:0px; border-top:0px; border-left:0px; border-bottom:1px solid #C9C9C9;" align="right">' + money(amt) + '</td>'
+        + '<td colspan="2" style="border-right:0px; border-top:0px; border-left:0px; border-bottom:1px solid #C9C9C9;" align="center">' + pct(txr) + '</td>'
+        + '<td colspan="2" style="border-right:0px; border-top:0px; border-left:0px; border-bottom:1px solid #C9C9C9;" align="right">' + money(Math.abs(txa)) + '</td>'
+        + '<td colspan="2" style="border-left:0px; border-top:0px; border-bottom:1px solid #C9C9C9;" align="right">' + money(amt + txa) + '</td>'
+        + '</tr>';
     }
+
+    var invoiceBlockHtml = ''
+      + '<table style="width:100%; border-collapse:collapse; font-family:Arial; border:1px solid #000; border-bottom:0px solid #000;">'
+      + '<tr>'
+      + '<td colspan="11" rowspan="7" style="font-size:30pt; vertical-align:middle; font-weight:bold; border:none;">DRAFT INVOICE</td>'
+      + '<td colspan="5" rowspan="7" align="right" style="vertical-align:middle; font-weight:bold; border:none;"><img src="' + logoUrl + '" height="100" /></td>'
+      + '</tr>'
+      + '</table>'
+
+      + '<table style="width:100%; border-collapse:collapse; font-family:Arial; font-size:10pt; border:1px solid #000; border-top:0px solid #000;">'
+      + '<tr>'
+      + '<td colspan="5" rowspan="4" valign="top" style="border:none;">'
+      + '<b>ATTN:</b><br/>'
+      + billAddrHtml
+      + '</td>'
+      + '<td colspan="6" valign="top" style="border:none;"><b>Invoice Date:</b><br/>' + soDate + '</td>'
+      + '<td colspan="5" rowspan="4" align="right" valign="top" style="border:none;">'
+      + subAddrHtml + '<br/>'
+      + '<b>ABN:</b> ' + subABN
+      + '</td>'
+      + '</tr>'
+
+      + '<tr><td colspan="6" valign="top" style="border:none;"><b>Invoice Number:</b><br/>DRAFT</td></tr>'
+      + '<tr><td colspan="6" valign="top" style="border:none;"><b>PO Number:</b><br/>' + esc(poNumbers.join(', ')) + '</td></tr>'
+      + '<tr><td colspan="6" valign="top" style="border:none;"><b>Customer Reference:</b><br/>' + esc(projectRefs.join(', ')) + '</td></tr>'
+
+      + '<tr><td colspan="16" style="border:none;">&nbsp;</td></tr>'
+      + '<tr><td colspan="16" style="border:none;"><b>Memo:</b><br/>' + esc(memos.join(' | ')) + '</td></tr>'
+      + '<tr><td colspan="16" style="border:none;">&nbsp;</td></tr>'
+
+      + '<tr>'
+      + '<th colspan="8" align="left" style="border-top:0px; border-right:0px; border-bottom:1px solid #999;"><b>Description</b></th>'
+      + '<th colspan="2" align="right" style="border-top:0px; border-right:0px; border-left:0px; border-bottom:1px solid #999;"><b>Price</b></th>'
+      + '<th colspan="2" align="center" style="border-top:0px; border-right:0px; border-left:0px; border-bottom:1px solid #999;"><b>' + (isAmericas ? 'TAX' : 'GST') + '</b></th>'
+      + '<th colspan="2" align="right" style="border-top:0px; border-right:0px; border-left:0px; border-bottom:1px solid #999;"><b>' + TAX_LABEL_AMT + '</b></th>'
+      + '<th colspan="2" align="right" style="border-top:0px; border-left:0px; border-bottom:1px solid #999;"><b>Amount ' + currencyText + '</b></th>'
+      + '</tr>'
+
+      + rowsHtml
+
+      + '<tr><td colspan="10" style="border:none;">&nbsp;</td></tr>'
+      + '<tr><td rowspan="3" colspan="12" style="border:none;"></td><td colspan="2" align="right" style="border:none;">Subtotal</td><td colspan="2" align="right" style="border:none;">' + money(subTotalExTax) + '</td></tr>'
+      + '<tr><td colspan="2" align="right" style="border:none;">' + TAX_LABEL_TOTAL + '</td><td colspan="2" align="right" style="border:none;">' + money(Math.abs(totalTax)) + '</td></tr>'
+      + '<tr><td colspan="2" align="right" style="border-top:1px solid #999; border-left:0px; border-right:0px; border-bottom:0px;"><b>TOTAL ' + currencyText + '</b></td><td colspan="2" align="right" style="border-top:1px solid #999; border-right:0px; border-left:0px; border-bottom:0px;"><b>' + money(subTotalExTax + Math.abs(totalTax)) + '</b></td></tr>'
+
+      + '<tr><td colspan="16" style="border:none;">&nbsp;</td></tr>'
+      + '<tr><td colspan="16" style="border:none;">'
+      + '<b>Sales Orders:</b> ' + esc(soNumbers.join(', ')) + '<br/><br/>'
+      + '<b>Customer:</b> ' + esc(customerNames.join(', ')) + '<br/><br/>'
+      + '<b>Due Date:</b> ' + dueDate + '<br/><br/>'
+      + '<b>Payment Terms:</b> ' + terms + '<br/><br/>'
+      + 'Please email remittance advice to ' + remitEmail + '<br/><br/>'
+      + '<b>BANK ACCOUNT DETAILS</b><br/>'
+      + 'Account Name: ' + acctName + '<br/>'
+      + 'Bank: ' + bankName + '<br/>'
+      + 'BSB: ' + bsb + '<br/>'
+      + 'Account: ' + acctNum
+      + '</td></tr>'
+      + '</table>';
 
     return {
       tranIds: tranIds,
       firstSoId: firstSoId,
       logoUrl: logoUrl,
       subId: subId,
-      categoryLines: categoryLines,
+      rowsHtml: rowsHtml,
+      invoiceBlockHtml: invoiceBlockHtml,
       customerNames: customerNames,
       poNumbers: poNumbers,
       soNumbers: soNumbers,
@@ -225,22 +287,7 @@ define([
       subTotalExTax: subTotalExTax,
       totalTax: totalTax,
       grandTotal: subTotalExTax + Math.abs(totalTax),
-      replaceLabor: replaceLabor,
-      billAddrHtml: billAddrHtml,
-      dueDate: dueDate,
-      terms: terms,
-      currencyText: currencyText,
-      soDate: soDate,
-      isAmericas: isAmericas,
-      TAX_LABEL_AMT: TAX_LABEL_AMT,
-      TAX_LABEL_TOTAL: TAX_LABEL_TOTAL,
-      subAddrHtml: subAddrHtml,
-      subABN: subABN,
-      remitEmail: remitEmail,
-      acctName: acctName,
-      bankName: bankName,
-      bsb: bsb,
-      acctNum: acctNum
+      replaceLabor: replaceLabor
     };
   }
 
@@ -342,12 +389,33 @@ define([
         search.createColumn({ name: 'custcol_bc_time_type', join: 'CUSTCOL_BC_TM_TIME_BILL', summary: 'GROUP' }),
         search.createColumn({ name: 'custcol_bc_tm_billing_shift', join: 'CUSTCOL_BC_TM_TIME_BILL', summary: 'GROUP' }),
         search.createColumn({ name: 'date', join: 'CUSTCOL_BC_TM_TIME_BILL', summary: 'GROUP', sort: search.Sort.ASC }),
-        search.createColumn({ name: 'custcol_bc_tm_line_id', summary: 'GROUP' }),
-        search.createColumn({ name: 'memo', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' }),
-        search.createColumn({ name: 'trandate', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' }),
-        search.createColumn({ name: 'quantity', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'SUM' }),
-        search.createColumn({ name: 'rate', summary: 'MAX' }),
-        search.createColumn({ name: 'amount', summary: 'SUM' })
+        search.createColumn({
+          name: 'custcol_bc_tm_line_id',
+          summary: 'GROUP'
+        }),
+        search.createColumn({
+          name: 'memo',
+          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
+          summary: 'GROUP'
+        }),
+        search.createColumn({
+          name: 'trandate',
+          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
+          summary: 'GROUP'
+        }),
+        search.createColumn({
+          name: 'quantity',
+          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
+          summary: 'SUM'
+        }),
+        search.createColumn({
+          name: 'rate',
+          summary: 'MAX'
+        }),
+        search.createColumn({
+          name: 'amount',
+          summary: 'SUM'
+        })
       ]
     });
 
@@ -534,21 +602,58 @@ define([
         ["formulatext: case when {custcol_bc_tm_line_id} = {custcol_bc_tm_source_transaction.line} then 1 else 0 end", 'is', '1']
       ],
       columns: [
-        search.createColumn({ name: 'custcol_invoicing_category', summary: 'GROUP' }),
-        search.createColumn({ name: 'tranid', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' }),
-        search.createColumn({ name: 'mainname', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' }),
-        search.createColumn({ name: 'amount', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'MAX' }),
-        search.createColumn({ name: 'taxamount', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'MAX' }),
-        search.createColumn({ name: 'line', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' }),
-        search.createColumn({ name: 'memo', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' }),
+        search.createColumn({
+          name: 'custcol_invoicing_category',
+          summary: 'GROUP'
+        }),
+        search.createColumn({
+          name: 'tranid',
+          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
+          summary: 'GROUP'
+        }),
+        search.createColumn({
+          name: 'mainname',
+          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
+          summary: 'GROUP'
+        }),
+        search.createColumn({
+          name: 'amount',
+          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
+          summary: 'MAX'
+        }),
+        search.createColumn({
+          name: 'taxamount',
+          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
+          summary: 'MAX'
+        }),
+        search.createColumn({
+          name: 'line',
+          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
+          summary: 'GROUP'
+        }),
+        search.createColumn({
+          name: 'memo',
+          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
+          summary: 'GROUP'
+        }),
         search.createColumn({
           name: 'formulatext',
           summary: 'MAX',
           formula: "CASE WHEN {custcol_bc_tm_source_transaction.appliedtotransaction} LIKE 'Purchase Order%' THEN TRIM(REPLACE({custcol_bc_tm_source_transaction.appliedtotransaction}, 'Purchase Order', '')) ELSE {custcol_bc_tm_source_transaction.tranid} END"
         }),
-        search.createColumn({ name: 'custcol_bc_tm_line_id', summary: 'GROUP' }),
-        search.createColumn({ name: 'amount', summary: 'MAX' }),
-        search.createColumn({ name: 'expensecategory', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' })
+        search.createColumn({
+          name: 'custcol_bc_tm_line_id',
+          summary: 'GROUP'
+        }),
+        search.createColumn({
+          name: 'amount',
+          summary: 'MAX'
+        }),
+        search.createColumn({
+          name: 'expensecategory',
+          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
+          summary: 'GROUP'
+        })
       ]
     });
 
@@ -687,29 +792,20 @@ define([
       + '</head>'
       + '<body>';
 
-    var sheet = { row: 1 };
-
     html += '<div id="sheet1">';
-
-    html += buildInvoiceExcelBlock(invoiceData, sheet);
+    html += invoiceData.invoiceBlockHtml;
     html += '<br/><br/>';
 
-    html += '<table style="width:100%; border-collapse:collapse;">';
-    html += openTrackedRow(sheet);
-    html += '<td colspan="20" style="background-color:#000; height:8px;"></td>';
-    html += '</tr></table>';
-    html += '<br/><br/>';
+    html += '<table style="width:100%; border-collapse:collapse;">'
+      + '<tr><td colspan="20" style="background-color:#000; height:8px;"></td></tr>'
+      + '</table>'
+      + '<br/><br/>';
 
     for (var i = 0; i < timesheetDataByTran.length; i++) {
-      html += buildTimesheetHtmlBlock(timesheetDataByTran[i], sheet);
+      html += buildTimesheetHtmlBlock(timesheetDataByTran[i]);
 
       if (i !== timesheetDataByTran.length - 1) {
-        html += '<br/><br/><br/>';
-        html += '<table style="width:100%; border-collapse:collapse;">';
-        html += openTrackedRow(sheet);
-        html += '<td colspan="20" style="background-color:#000; height:8px;"></td>';
-        html += '</tr></table>';
-        html += '<br/><br/><br/>';
+        html += '<br/><br/><br/><table style="width:100%; border-collapse:collapse;"><tr><td colspan="20" style="background-color:#000; height:8px;"></td></tr></table><br/><br/><br/>';
       }
     }
 
@@ -717,267 +813,146 @@ define([
     return html;
   }
 
-  function buildInvoiceExcelBlock(invoiceData, sheet) {
-    var html = '';
-
-    // Header table -> 1 actual worksheet row
-    html += '<table style="width:100%; border-collapse:collapse; font-family:Arial; border:1px solid #000; border-bottom:0px solid #000;">';
-    html += openTrackedRow(sheet);
-    html += '<td colspan="11" rowspan="7" style="font-size:30pt; vertical-align:middle; font-weight:bold; border:none;">DRAFT INVOICE</td>';
-    html += '<td colspan="5" rowspan="7" align="right" style="vertical-align:middle; font-weight:bold; border:none;"><img src="' + invoiceData.logoUrl + '" height="100" /></td>';
-    html += '</tr>';
-    html += '</table>';
-
-    html += '<table style="width:100%; border-collapse:collapse; font-family:Arial; font-size:10pt; border:1px solid #000; border-top:0px solid #000;">';
-
-    // These are actual worksheet rows
-    html += openTrackedRow(sheet);
-    html += '<td colspan="5" rowspan="4" valign="top" style="border:none;">'
-      + '<b>ATTN:</b><br/>'
-      + invoiceData.billAddrHtml
-      + '</td>';
-    html += '<td colspan="6" valign="top" style="border:none;"><b>Invoice Date:</b><br/>' + invoiceData.soDate + '</td>';
-    html += '<td colspan="5" rowspan="4" align="right" valign="top" style="border:none;">'
-      + invoiceData.subAddrHtml + '<br/>'
-      + '<b>ABN:</b> ' + invoiceData.subABN
-      + '</td>';
-    html += '</tr>';
-
-    html += openTrackedRow(sheet);
-    html += '<td colspan="6" valign="top" style="border:none;"><b>Invoice Number:</b><br/>DRAFT</td>';
-    html += '</tr>';
-
-    html += openTrackedRow(sheet);
-    html += '<td colspan="6" valign="top" style="border:none;"><b>PO Number:</b><br/>' + esc(invoiceData.poNumbers.join(', ')) + '</td>';
-    html += '</tr>';
-
-    html += openTrackedRow(sheet);
-    html += '<td colspan="6" valign="top" style="border:none;"><b>Customer Reference:</b><br/>' + esc(invoiceData.projectRefs.join(', ')) + '</td>';
-    html += '</tr>';
-
-    html += openTrackedRow(sheet);
-    html += '<td colspan="16" style="border:none;">&nbsp;</td>';
-    html += '</tr>';
-
-    html += openTrackedRow(sheet);
-    html += '<td colspan="16" style="border:none;"><b>Memo:</b><br/>' + esc(invoiceData.memos.join(' | ')) + '</td>';
-    html += '</tr>';
-
-    html += openTrackedRow(sheet);
-    html += '<td colspan="16" style="border:none;">&nbsp;</td>';
-    html += '</tr>';
-
-    var invoiceHeaderRow = currentRowNumber(sheet);
-    html += openTrackedRow(sheet);
-    html += '<th colspan="8" align="left" style="border-top:0px; border-right:0px; border-bottom:1px solid #999;"><b>Description</b></th>';
-    html += '<th colspan="2" align="right" style="border-top:0px; border-right:0px; border-left:0px; border-bottom:1px solid #999;"><b>Price</b></th>';
-    html += '<th colspan="2" align="center" style="border-top:0px; border-right:0px; border-left:0px; border-bottom:1px solid #999;"><b>' + (invoiceData.isAmericas ? 'TAX' : 'GST') + '</b></th>';
-    html += '<th colspan="2" align="right" style="border-top:0px; border-right:0px; border-left:0px; border-bottom:1px solid #999;"><b>' + invoiceData.TAX_LABEL_AMT + '</b></th>';
-    html += '<th colspan="2" align="right" style="border-top:0px; border-left:0px; border-bottom:1px solid #999;"><b>Amount ' + invoiceData.currencyText + '</b></th>';
-    html += '</tr>';
-
-    var invoiceLineStartRow = currentRowNumber(sheet);
-
-    for (var i = 0; i < invoiceData.categoryLines.length; i++) {
-      var line = invoiceData.categoryLines[i];
-      var rowNum = currentRowNumber(sheet);
-
-      html += openTrackedRow(sheet);
-      html += '<td colspan="8" style="border-right:0px; border-top:0px; border-bottom:1px solid #C9C9C9;">' + line.description + '</td>';
-      html += '<td colspan="2" style="border-right:0px; border-top:0px; border-left:0px; border-bottom:1px solid #C9C9C9; ' + excelCurrencyStyle() + '" align="right">' + toFixed2(line.amount) + '</td>';
-      html += '<td colspan="2" style="border-right:0px; border-top:0px; border-left:0px; border-bottom:1px solid #C9C9C9;" align="center">' + pct(line.taxRate) + '</td>';
-      html += '<td colspan="2" style="border-right:0px; border-top:0px; border-left:0px; border-bottom:1px solid #C9C9C9; ' + excelCurrencyStyle() + '" align="right">' + toFixed2(line.taxAmount) + '</td>';
-      html += '<td colspan="2" style="border-left:0px; border-top:0px; border-bottom:1px solid #C9C9C9; ' + excelCurrencyStyle() + '" align="right">='
-        + getCellRef(rowNum, 9) + '+' + getCellRef(rowNum, 13) + '</td>';
-      html += '</tr>';
-    }
-
-    var invoiceLineEndRow = sheet.row - 1;
-
-    html += openTrackedRow(sheet);
-    html += '<td colspan="10" style="border:none;">&nbsp;</td>';
-    html += '</tr>';
-
-    var subtotalRow = currentRowNumber(sheet);
-    html += openTrackedRow(sheet);
-    html += '<td rowspan="3" colspan="12" style="border:none;"></td>';
-    html += '<td colspan="2" align="right" style="border:none;">Subtotal</td>';
-    html += '<td colspan="2" align="right" style="border:none; ' + excelCurrencyStyle() + '">=SUM('
-      + getCellRef(invoiceLineStartRow, 9) + ':' + getCellRef(invoiceLineEndRow, 9) + ')</td>';
-    html += '</tr>';
-
-    var taxRow = currentRowNumber(sheet);
-    html += openTrackedRow(sheet);
-    html += '<td colspan="2" align="right" style="border:none;">' + invoiceData.TAX_LABEL_TOTAL + '</td>';
-    html += '<td colspan="2" align="right" style="border:none; ' + excelCurrencyStyle() + '">=SUM('
-      + getCellRef(invoiceLineStartRow, 13) + ':' + getCellRef(invoiceLineEndRow, 13) + ')</td>';
-    html += '</tr>';
-
-    html += openTrackedRow(sheet);
-    html += '<td colspan="2" align="right" style="border-top:1px solid #999; border-left:0px; border-right:0px; border-bottom:0px;"><b>TOTAL ' + invoiceData.currencyText + '</b></td>';
-    html += '<td colspan="2" align="right" style="border-top:1px solid #999; border-right:0px; border-left:0px; border-bottom:0px; ' + excelCurrencyStyle() + '"><b>='
-      + getCellRef(subtotalRow, 15) + '+' + getCellRef(taxRow, 15) + '</b></td>';
-    html += '</tr>';
-
-    html += openTrackedRow(sheet);
-    html += '<td colspan="16" style="border:none;">&nbsp;</td>';
-    html += '</tr>';
-
-    html += openTrackedRow(sheet);
-    html += '<td colspan="16" style="border:none;">'
-      + '<b>Sales Orders:</b> ' + esc(invoiceData.soNumbers.join(', ')) + '<br/><br/>'
-      + '<b>Customer:</b> ' + esc(invoiceData.customerNames.join(', ')) + '<br/><br/>'
-      + '<b>Due Date:</b> ' + invoiceData.dueDate + '<br/><br/>'
-      + '<b>Payment Terms:</b> ' + invoiceData.terms + '<br/><br/>'
-      + 'Please email remittance advice to ' + invoiceData.remitEmail + '<br/><br/>'
-      + '<b>BANK ACCOUNT DETAILS</b><br/>'
-      + 'Account Name: ' + invoiceData.acctName + '<br/>'
-      + 'Bank: ' + invoiceData.bankName + '<br/>'
-      + 'BSB: ' + invoiceData.bsb + '<br/>'
-      + 'Account: ' + invoiceData.acctNum
-      + '</td>';
-    html += '</tr>';
-
-    html += '</table>';
-    return html;
-  }
-
-  function buildTimesheetHtmlBlock(ts, sheet) {
+  function buildTimesheetHtmlBlock(ts) {
     var x = ts.groupedData || {};
     var h = ts.headerInfo || {};
     var labelLabor = ts.replaceLabor ? 'Labour' : 'Labor';
 
     var html = '';
 
-    // title table = 1 worksheet row
-    html += '<table style="width:100%; border-collapse: collapse; font-size:10pt;">';
-    html += openTrackedRow(sheet);
-    html += '<td colspan="4" rowspan="7" style="padding:10px;"><img src="' + h.logoUrl + '" height="100" /></td>';
-    html += '<td colspan="17" rowspan="7" style="font-size:26pt; font-weight:bold; text-align:center; vertical-align:middle;">Weekly Timesheet - ' + esc(h.docNumber) + '</td>';
-    html += '</tr>';
-    html += '</table>';
-    html += '<br/><br/><br/>';
+    html += ''
+      + '<table style="width:100%; border-collapse: collapse; font-size:10pt;">'
+      + '<tr>'
+      + '<td colspan="4" rowspan="7" style="padding:10px;">'
+      + '<img src="' + h.logoUrl + '" height="100" />'
+      + '</td>'
+      + '<td colspan="17" rowspan="7" style="font-size:26pt; font-weight:bold; text-align:center; vertical-align:middle;">Weekly Timesheet - ' + esc(h.docNumber) + '</td>'
+      + '</tr>'
+      + '</table>'
+      + '<br/><br/><br/>';
 
-    // outer info table contributes only 1 worksheet row
-    html += '<table style="width:100%; border-collapse:collapse; font-size:9pt; table-layout:fixed; margin-top:10px;">';
-    html += openTrackedRow(sheet);
-    html += '<td colspan="2" style="width:49%; vertical-align:top;">';
-
-    // nested table - not tracked
-    html += '<table style="width:100%; border-collapse:collapse;">'
+    html += ''
+      + '<table style="width:100%; border-collapse:collapse; font-size:9pt; table-layout:fixed; margin-top:10px;">'
+      + '<tr>'
+      + '<td colspan="2" style="width:49%; vertical-align:top;">'
+      + '<table style="width:100%; border-collapse:collapse;">'
       + '<tr><td class="info-header" colspan="2">Client:</td><td style="border:1px solid #000;" colspan="4">' + esc(h.client) + '</td></tr>'
-      + '<tr><td class="info-header" colspan="2">Customer Ref #:</td><td style="border:1px solid #000;" colspan="4">' + esc(h.customerRef) + '</td></tr>'
-      + '<tr><td class="info-header" colspan="2">Week-Ending:</td><td style="border:1px solid #000; mso-number-format:\\@;" colspan="4">="' + formatDateMMDDYYYY(h.weekEnding) + '"</td></tr>'
+      + '<tr><td class="info-header" colspan="2">Customer Ref #:</td><td style="border:1px solid #000; " colspan="4">' + esc(h.customerRef) + '</td></tr>'
+      + '<tr><td class="info-header" colspan="2">Week-Ending:</td><td style="border:1px solid #000; mso-number-format:\\@;" colspan="4">="' + escPlain(h.weekEnding) + '"</td></tr>'
       + '<tr><td class="info-header" colspan="2">C2O Project Manager:</td><td style="border:1px solid #000;" colspan="4">' + esc(h.projectManager) + '</td></tr>'
       + '<tr><td class="info-header" colspan="2">Description of Work:</td><td style="border:1px solid #000;" colspan="4">' + esc(h.description) + '</td></tr>'
       + '<tr><td class="info-header" colspan="2">Document #:</td><td style="border:1px solid #000;" colspan="4">' + esc(h.docNumber) + '</td></tr>'
-      + '</table>';
+      + '</table>'
+      + '</td>'
 
-    html += '</td>';
-    html += '<td style="width:2%; border:0px;" colspan="4"></td>';
-    html += '<td colspan="2" style="width:49%; vertical-align:top;">';
+      + '<td style="width:2%; border:0px;" colspan="4"></td>'
 
-    // nested table - not tracked
-    html += '<table style="width:100%; border-collapse:collapse;">'
+      + '<td colspan="2" style="width:49%; vertical-align:top;">'
+      + '<table style="width:100%; border-collapse:collapse;">'
       + '<tr><td class="info-header" colspan="2">Project:</td><td colspan="4" style="border:1px solid #000;">' + esc(h.reportingProject) + '</td></tr>'
       + '<tr><td class="info-header" colspan="2">C2O Job:</td><td colspan="4" style="border:1px solid #000;">' + esc(h.projectName) + '</td></tr>'
       + '<tr><td class="info-header" colspan="2">Supervisor:</td><td colspan="4" style="border:1px solid #000;">' + esc(h.supervisor) + '</td></tr>'
       + '<tr><td class="info-header" colspan="2">Start Time: Monday – Friday</td><td style="border:1px solid #000;">' + esc(h.startTime) + '</td><td class="info-header" colspan="2">Finish Time:</td><td style="border:1px solid #000;">' + esc(h.endTime) + '</td></tr>'
       + '<tr><td class="info-header" colspan="2">Start Time: Weekend / Holiday</td><td style="border:1px solid #000;">' + esc(h.startTime) + '</td><td class="info-header" colspan="2">Finish Time:</td><td style="border:1px solid #000;">' + esc(h.endTime) + '</td></tr>'
-      + '</table>';
-
-    html += '</td>';
-    html += '</tr>';
-    html += '</table>';
-    html += '<br/><br/><br/>';
+      + '</table>'
+      + '</td>'
+      + '</tr>'
+      + '</table>'
+      + '<br/><br/><br/>';
 
     if (x.Labor || x.Labour) {
       var labor = x.Labor || x.Labour;
-      html += '<table>';
 
-      // 3 top rows
-      html += openTrackedRow(sheet);
-      html += '<th class="table-header" colspan="6">' + labelLabor + '</th>';
-      html += '<td colspan="15" align="center" style="border-top:1px solid #000; border-bottom:1px solid #000; border-left:1px solid #000; border-right:1px solid #000;">ALL HOURS SHOWN ARE HOURS WORKED</td>';
-      html += '</tr>';
+      html += '<table>'
+        + '<tr>'
+        + '<th class="table-header" colspan="6">' + labelLabor + '</th>'
+        + '<td colspan="15" align="center" style="border-top:1px solid #000; border-bottom:1px solid #000; border-left:1px solid #000; border-right:1px solid #000;">ALL HOURS SHOWN ARE HOURS WORKED</td>'
+        + '</tr>'
+        + '<tr>'
+        + '<th class="table-header" colspan="2" rowspan="2">Name</th>'
+        + '<th class="table-header" colspan="2" rowspan="2">Role</th>'
+        + '<th class="table-header" rowspan="2">Time Type</th>'
+        + '<th class="table-header" rowspan="2">Shift Type</th>';
 
-      html += openTrackedRow(sheet);
-      html += '<th class="table-header" colspan="2" rowspan="2">Name</th>';
-      html += '<th class="table-header" colspan="2" rowspan="2">Role</th>';
-      html += '<th class="table-header" rowspan="2">Time Type</th>';
-      html += '<th class="table-header" rowspan="2">Shift Type</th>';
       for (var i1 = 0; i1 < labor[0].days.length; i1++) {
         html += '<th class="table-header">' + getDayName(labor[0].days[i1].date) + '</th>';
       }
-      html += '<th class="table-header" rowspan="2">Total Week</th>';
-      html += '<th class="table-header" rowspan="2">Rate</th>';
-      html += '<th class="table-header" rowspan="2">Claim Amount</th>';
-      html += '<th class="table-header" rowspan="2" colspan="' + (12 - labor[0].days.length) + '">Notes</th>';
-      html += '</tr>';
 
-      html += openTrackedRow(sheet);
+      html += '<th class="table-header" rowspan="2">Total Week</th>'
+        + '<th class="table-header" rowspan="2">Rate</th>'
+        + '<th class="table-header" rowspan="2">Claim Amount</th>'
+        + '<th class="table-header" rowspan="2" colspan="' + (12 - labor[0].days.length) + '">Notes</th>'
+        + '</tr>'
+        + '<tr>';
+
       for (var i2 = 0; i2 < labor[0].days.length; i2++) {
-        html += '<th class="table-header" style="mso-number-format:\\@;">="' + formatDateMMDDYYYY(labor[0].days[i2].date) + '"</th>';
+        html += '<th class="table-header" style="mso-number-format:\\@;">="' + escPlain(labor[0].days[i2].date) + '"</th>';
       }
+
       html += '</tr>';
 
+      var laborDataStartExcelRow = 4;
+      var laborCurrentExcelRow = laborDataStartExcelRow;
       var laborFirstDayCol = 7;
-      var laborDataStartRow = currentRowNumber(sheet);
 
       for (var q = 1; q < labor.length - 1; q++) {
-        var rowNum = currentRowNumber(sheet);
         var totalWeekCol = laborFirstDayCol + labor[q].days.length;
         var rateCol = totalWeekCol + 1;
         var amtCol = rateCol + 1;
 
-        html += openTrackedRow(sheet);
-        html += '<td colspan="2">' + labor[q].employee + '</td>';
-        html += '<td colspan="2">' + labor[q].role + '</td>';
-        html += '<td>' + labor[q].shiftType + '</td>';
-        html += '<td>' + labor[q].shift + '</td>';
+        html += '<tr>'
+          + '<td colspan="2">' + labor[q].employee + '</td>'
+          + '<td colspan="2">' + labor[q].role + '</td>'
+          + '<td>' + labor[q].shiftType + '</td>'
+          + '<td>' + labor[q].shift + '</td>';
 
         for (var w = 0; w < labor[q].days.length; w++) {
           html += '<td style="' + excelNumberOneDecimalStyle() + '">' + labor[q].days[w].hours + '</td>';
         }
 
         html += '<td style="' + excelNumberOneDecimalStyle() + '">=SUM('
-          + getCellRef(rowNum, laborFirstDayCol) + ':' + getCellRef(rowNum, totalWeekCol - 1) + ')</td>';
+          + getCellRef(laborCurrentExcelRow, laborFirstDayCol) + ':'
+          + getCellRef(laborCurrentExcelRow, totalWeekCol - 1) + ')</td>';
 
         html += '<td style="' + excelCurrencyStyle() + '">' + toFixed2(labor[q].rate) + '</td>';
 
         html += '<td style="' + excelCurrencyStyle() + '">='
-          + getCellRef(rowNum, totalWeekCol) + '*'
-          + getCellRef(rowNum, rateCol) + '</td>';
+          + getCellRef(laborCurrentExcelRow, totalWeekCol) + '*'
+          + getCellRef(laborCurrentExcelRow, rateCol) + '</td>';
 
-        html += '<td colspan="' + (12 - labor[q].days.length) + '"></td>';
-        html += '</tr>';
+        html += '<td colspan="' + (12 - labor[q].days.length) + '"></td>'
+          + '</tr>';
+
+        laborCurrentExcelRow++;
       }
 
       if (labor.length > 1) {
         var last = labor[labor.length - 1];
-        var laborDataEndRow = sheet.row - 1;
+        var laborDataEndExcelRow = laborCurrentExcelRow - 1;
         var lastTotalWeekCol = laborFirstDayCol + last.days.length;
         var lastAmtCol = lastTotalWeekCol + 2;
 
-        html += openTrackedRow(sheet);
-        html += '<td colspan="5" style="border-left:0; border-bottom:0;"></td>';
-        html += '<td class="table-header" style="font-weight:bold;">' + last.employee + '</td>';
+        html += '<tr>'
+          + '<td colspan="5" style="border-left:0; border-bottom:0;"></td>'
+          + '<td class="table-header">TOTAL</td>';
 
         for (var lw = 0; lw < last.days.length; lw++) {
           var dayCol = laborFirstDayCol + lw;
-          html += '<td class="table-header" style="font-weight:bold; ' + excelNumberOneDecimalStyle() + '">=SUM('
-            + getCellRef(laborDataStartRow, dayCol) + ':' + getCellRef(laborDataEndRow, dayCol) + ')</td>';
+          html += '<td class="table-header" style="' + excelNumberOneDecimalStyle() + '">=SUM('
+            + getCellRef(laborDataStartExcelRow, dayCol) + ':'
+            + getCellRef(laborDataEndExcelRow, dayCol) + ')</td>';
         }
 
-        html += '<td class="table-header" style="font-weight:bold; ' + excelNumberOneDecimalStyle() + '">=SUM('
-          + getCellRef(laborDataStartRow, lastTotalWeekCol) + ':' + getCellRef(laborDataEndRow, lastTotalWeekCol) + ')</td>';
+        html += '<td class="table-header" style="' + excelNumberOneDecimalStyle() + '">=SUM('
+          + getCellRef(laborDataStartExcelRow, lastTotalWeekCol) + ':'
+          + getCellRef(laborDataEndExcelRow, lastTotalWeekCol) + ')</td>';
 
         html += '<td class="table-header"></td>';
 
-        html += '<td class="table-header" style="font-weight:bold; ' + excelCurrencyStyle() + '">=SUM('
-          + getCellRef(laborDataStartRow, lastAmtCol) + ':' + getCellRef(laborDataEndRow, lastAmtCol) + ')</td>';
-
-        html += '</tr>';
+        html += '<td class="table-header" style="' + excelCurrencyStyle() + '">=SUM('
+          + getCellRef(laborDataStartExcelRow, lastAmtCol) + ':'
+          + getCellRef(laborDataEndExcelRow, lastAmtCol) + ')</td>'
+          + '</tr>';
       }
 
       html += '</table>';
@@ -986,175 +961,171 @@ define([
     if (x['Equipment / Vehicle Rental']) {
       var equp = x['Equipment / Vehicle Rental'];
 
-      html += '<br/><br/><br/><table>';
+      html += '<br/><br/><br/><table>'
+        + '<tr><th colspan="8">Equipment / Vehicle Rental</th></tr>'
+        + '<tr>'
+        + '<th colspan="4" rowspan="2">Role</th>';
 
-      html += openTrackedRow(sheet);
-      html += '<th colspan="8">Equipment / Vehicle Rental</th>';
-      html += '</tr>';
-
-      html += openTrackedRow(sheet);
-      html += '<th colspan="4" rowspan="2">Role</th>';
       for (var e1 = 0; e1 < equp[0].days.length; e1++) {
         html += '<th>' + getDayName(equp[0].days[e1].date) + '</th>';
       }
-      html += '<th rowspan="2">Total Week</th>';
-      html += '<th rowspan="2" colspan="' + (14 - equp[0].days.length) + '">Notes</th>';
-      html += '</tr>';
 
-      html += openTrackedRow(sheet);
+      html += '<th rowspan="2">Total Week</th>'
+        + '<th rowspan="2" colspan="' + (14 - equp[0].days.length) + '">Notes</th>'
+        + '</tr>'
+        + '<tr>';
+
       for (var e2 = 0; e2 < equp[0].days.length; e2++) {
-        html += '<th style="mso-number-format:\\@;">="' + formatDateMMDDYYYY(equp[0].days[e2].date) + '"</th>';
+        html += '<th style="mso-number-format:\\@;">="' + escPlain(equp[0].days[e2].date) + '"</th>';
       }
+
       html += '</tr>';
 
+      var eqDataStartExcelRow = 4;
+      var eqCurrentExcelRow = eqDataStartExcelRow;
       var eqFirstDayCol = 5;
-      var eqDataStartRow = currentRowNumber(sheet);
 
       for (var r = 1; r < equp.length - 1; r++) {
-        var eqRowNum = currentRowNumber(sheet);
         var eqTotalWeekCol = eqFirstDayCol + equp[r].days.length;
 
-        html += openTrackedRow(sheet);
-        html += '<td colspan="4">' + equp[r].role + '</td>';
+        html += '<tr><td colspan="4">' + equp[r].role + '</td>';
+
         for (var t = 0; t < equp[r].days.length; t++) {
           html += '<td style="' + excelNumberOneDecimalStyle() + '">' + equp[r].days[t].hours + '</td>';
         }
+
         html += '<td style="' + excelNumberOneDecimalStyle() + '">=SUM('
-          + getCellRef(eqRowNum, eqFirstDayCol) + ':' + getCellRef(eqRowNum, eqTotalWeekCol - 1) + ')</td>';
-        html += '<td colspan="' + (14 - equp[r].days.length) + '"></td>';
-        html += '</tr>';
+          + getCellRef(eqCurrentExcelRow, eqFirstDayCol) + ':'
+          + getCellRef(eqCurrentExcelRow, eqTotalWeekCol - 1) + ')</td>'
+          + '<td colspan="' + (14 - equp[r].days.length) + '"></td>'
+          + '</tr>';
+
+        eqCurrentExcelRow++;
       }
 
       if (equp.length > 1) {
         var eqLast = equp[equp.length - 1];
-        var eqDataEndRow = sheet.row - 1;
+        var eqDataEndExcelRow = eqCurrentExcelRow - 1;
         var eqLastTotalWeekCol = eqFirstDayCol + eqLast.days.length;
 
-        html += openTrackedRow(sheet);
-        html += '<td colspan="4" class="table-header" style="font-weight:bold;">' + eqLast.role + '</td>';
+        html += '<tr><td colspan="4" class="table-header">TOTAL</td>';
 
         for (var te = 0; te < eqLast.days.length; te++) {
           var eqDayCol = eqFirstDayCol + te;
-          html += '<td class="table-header" style="font-weight:bold; ' + excelNumberOneDecimalStyle() + '">=SUM('
-            + getCellRef(eqDataStartRow, eqDayCol) + ':' + getCellRef(eqDataEndRow, eqDayCol) + ')</td>';
+          html += '<td class="table-header" style="' + excelNumberOneDecimalStyle() + '">=SUM('
+            + getCellRef(eqDataStartExcelRow, eqDayCol) + ':'
+            + getCellRef(eqDataEndExcelRow, eqDayCol) + ')</td>';
         }
 
-        html += '<td class="table-header" style="font-weight:bold; ' + excelNumberOneDecimalStyle() + '">=SUM('
-          + getCellRef(eqDataStartRow, eqLastTotalWeekCol) + ':' + getCellRef(eqDataEndRow, eqLastTotalWeekCol) + ')</td>';
-
-        html += '<td colspan="' + (14 - eqLast.days.length) + '" class="table-header"></td>';
-        html += '</tr>';
+        html += '<td class="table-header" style="' + excelNumberOneDecimalStyle() + '">=SUM('
+          + getCellRef(eqDataStartExcelRow, eqLastTotalWeekCol) + ':'
+          + getCellRef(eqDataEndExcelRow, eqLastTotalWeekCol) + ')</td>'
+          + '<td colspan="' + (14 - eqLast.days.length) + '" class="table-header"></td>'
+          + '</tr>';
       }
 
       html += '</table>';
     }
 
     if (x.Materials) {
-      html += '<br/><br/><br/><table>';
+      html += '<br/><br/><br/><table>'
+        + '<tr><th class="table-header" colspan="5">Materials</th></tr>'
+        + '<tr>'
+        + '<th class="table-header" colspan="2">Supplier Invoice #</th>'
+        + '<th class="table-header" colspan="3">Supplier</th>'
+        + '<th class="table-header" colspan="2">PO #</th>'
+        + '<th class="table-header" colspan="8">Description</th>'
+        + '<th class="table-header">Total Cost excl. Tax</th>'
+        + '<th class="table-header">Cost + Mark up</th>'
+        + '</tr>';
 
-      html += openTrackedRow(sheet);
-      html += '<th class="table-header" colspan="5">Materials</th>';
-      html += '</tr>';
-
-      html += openTrackedRow(sheet);
-      html += '<th class="table-header" colspan="2">Supplier Invoice #</th>';
-      html += '<th class="table-header" colspan="3">Supplier</th>';
-      html += '<th class="table-header" colspan="2">PO #</th>';
-      html += '<th class="table-header" colspan="8">Description</th>';
-      html += '<th class="table-header">Total Cost excl. Tax</th>';
-      html += '<th class="table-header">Cost + Mark up</th>';
-      html += '</tr>';
-
-      var matDataStartRow = currentRowNumber(sheet);
+      var matDataStartExcelRow = 3;
+      var matCurrentExcelRow = matDataStartExcelRow;
 
       for (var p = 0; p < x.Materials.length; p++) {
         var m = x.Materials[p];
         if (m.documentNumber === 'TOTAL') continue;
 
-        html += openTrackedRow(sheet);
-        html += '<td colspan="2">' + m.documentNumber + '</td>';
-        html += '<td colspan="3">' + m.mainName + '</td>';
-        html += '<td colspan="2">' + m.cleanedPO + '</td>';
-        html += '<td colspan="8">' + m.memo + '</td>';
-        html += '<td align="right" style="' + excelCurrencyStyle() + '">' + toFixed2(m.cost) + '</td>';
-        html += '<td align="right" style="' + excelCurrencyStyle() + '">' + toFixed2(m.amount) + '</td>';
-        html += '</tr>';
+        html += '<tr>'
+          + '<td colspan="2">' + m.documentNumber + '</td>'
+          + '<td colspan="3">' + m.mainName + '</td>'
+          + '<td colspan="2">' + m.cleanedPO + '</td>'
+          + '<td colspan="8">' + m.memo + '</td>'
+          + '<td align="right" style="' + excelCurrencyStyle() + '">' + toFixed2(m.cost) + '</td>'
+          + '<td align="right" style="' + excelCurrencyStyle() + '">' + toFixed2(m.amount) + '</td>'
+          + '</tr>';
+
+        matCurrentExcelRow++;
       }
 
-      if (sheet.row > matDataStartRow) {
-        var matDataEndRow = sheet.row - 1;
+      if (matCurrentExcelRow > matDataStartExcelRow) {
+        var matDataEndExcelRow = matCurrentExcelRow - 1;
 
-        html += openTrackedRow(sheet);
-        html += '<td colspan="13" style="border:0px solid #000;"></td>';
-        html += '<td colspan="2" align="right" style="background-color:#3a4b87; color:white; font-weight:bold;">Total</td>';
-        html += '<td align="right" style="' + excelCurrencyStyle() + '">=SUM('
-          + getCellRef(matDataStartRow, 16) + ':' + getCellRef(matDataEndRow, 16) + ')</td>';
-        html += '<td align="right" style="font-weight:bold; ' + excelCurrencyStyle() + '">=SUM('
-          + getCellRef(matDataStartRow, 17) + ':' + getCellRef(matDataEndRow, 17) + ')</td>';
-        html += '</tr>';
+        html += '<tr>'
+          + '<td colspan="13" style="border:0px solid #000;"></td>'
+          + '<td colspan="2" align="right" style="background-color:#3a4b87; color:white; font-weight:bold;">Total</td>'
+          + '<td align="right" style="' + excelCurrencyStyle() + '">=SUM(P' + matDataStartExcelRow + ':P' + matDataEndExcelRow + ')</td>'
+          + '<td align="right" style="font-weight:bold; ' + excelCurrencyStyle() + '">=SUM(Q' + matDataStartExcelRow + ':Q' + matDataEndExcelRow + ')</td>'
+          + '</tr>';
       }
 
       html += '</table>';
     }
 
     if (x.Expenses) {
-      html += '<br/><br/><br/><table>';
+      html += '<br/><br/><br/><table>'
+        + '<tr><th class="table-header" colspan="5">Expenses</th></tr>'
+        + '<tr>'
+        + '<th class="table-header" colspan="5">Expense Category</th>'
+        + '<th class="table-header" colspan="2">PO #</th>'
+        + '<th class="table-header" colspan="8">Description</th>'
+        + '<th class="table-header">Total Cost excl. Tax</th>'
+        + '<th class="table-header">Cost + Mark up</th>'
+        + '</tr>';
 
-      html += openTrackedRow(sheet);
-      html += '<th class="table-header" colspan="5">Expenses</th>';
-      html += '</tr>';
-
-      html += openTrackedRow(sheet);
-      html += '<th class="table-header" colspan="5">Expense Category</th>';
-      html += '<th class="table-header" colspan="2">PO #</th>';
-      html += '<th class="table-header" colspan="8">Description</th>';
-      html += '<th class="table-header">Total Cost excl. Tax</th>';
-      html += '<th class="table-header">Cost + Mark up</th>';
-      html += '</tr>';
-
-      var expDataStartRow = currentRowNumber(sheet);
+      var expDataStartExcelRow = 3;
+      var expCurrentExcelRow = expDataStartExcelRow;
 
       for (var a = 0; a < x.Expenses.length; a++) {
         var e = x.Expenses[a];
         if (e.documentNumber === 'TOTAL') continue;
 
-        html += openTrackedRow(sheet);
-        html += '<td colspan="5">' + e.expCat + '</td>';
-        html += '<td colspan="2">' + e.cleanedPO + '</td>';
-        html += '<td colspan="8">' + e.memo + '</td>';
-        html += '<td align="right" style="' + excelCurrencyStyle() + '">' + toFixed2(e.cost) + '</td>';
-        html += '<td align="right" style="' + excelCurrencyStyle() + '">' + toFixed2(e.amount) + '</td>';
-        html += '</tr>';
+        html += '<tr>'
+          + '<td colspan="5">' + e.expCat + '</td>'
+          + '<td colspan="2">' + e.cleanedPO + '</td>'
+          + '<td colspan="8">' + e.memo + '</td>'
+          + '<td align="right" style="' + excelCurrencyStyle() + '">' + toFixed2(e.cost) + '</td>'
+          + '<td align="right" style="' + excelCurrencyStyle() + '">' + toFixed2(e.amount) + '</td>'
+          + '</tr>';
+
+        expCurrentExcelRow++;
       }
 
-      if (sheet.row > expDataStartRow) {
-        var expDataEndRow = sheet.row - 1;
+      if (expCurrentExcelRow > expDataStartExcelRow) {
+        var expDataEndExcelRow = expCurrentExcelRow - 1;
 
-        html += openTrackedRow(sheet);
-        html += '<td colspan="5" style="border:0px solid #000; background-color:#3a4b87; color:white; font-weight:bold;">Total</td>';
-        html += '<td colspan="10" align="right"></td>';
-        html += '<td align="right" style="background-color:#3a4b87; color:white; font-weight:bold; ' + excelCurrencyStyle() + '">=SUM('
-          + getCellRef(expDataStartRow, 16) + ':' + getCellRef(expDataEndRow, 16) + ')</td>';
-        html += '<td align="right" style="background-color:#3a4b87; color:white; font-weight:bold; ' + excelCurrencyStyle() + '">=SUM('
-          + getCellRef(expDataStartRow, 17) + ':' + getCellRef(expDataEndRow, 17) + ')</td>';
-        html += '</tr>';
+        html += '<tr>'
+          + '<td colspan="5" style="border:0px solid #000; background-color:#3a4b87; color:white; font-weight:bold;">Total</td>'
+          + '<td colspan="10" align="right"></td>'
+          + '<td align="right" style="background-color:#3a4b87; color:white; font-weight:bold; ' + excelCurrencyStyle() + '">=SUM(P' + expDataStartExcelRow + ':P' + expDataEndExcelRow + ')</td>'
+          + '<td align="right" style="background-color:#3a4b87; color:white; font-weight:bold; ' + excelCurrencyStyle() + '">=SUM(Q' + expDataStartExcelRow + ':Q' + expDataEndExcelRow + ')</td>'
+          + '</tr>';
       }
 
       html += '</table><br/><br/><br/><br/>';
     }
 
     if (ts.legendArray && ts.legendArray.length > 0) {
-      html += '<br/><br/><table style="width:100%; border-top:1px solid #ccc; border-collapse:collapse; font-size:9pt;">';
-      html += openTrackedRow(sheet);
-      html += '<td colspan="15" style="padding-top:8px; padding-bottom:8px;"><strong>Time Type Legend:</strong>&nbsp;&nbsp;';
+      html += '<br/><br/><table style="width:100%; border-top:1px solid #ccc; border-collapse:collapse; font-size:9pt;"><tr><td colspan="15" style="padding-top:8px; padding-bottom:8px;"><strong>Time Type Legend:</strong>&nbsp;&nbsp;';
+
       for (var lg = 0; lg < ts.legendArray.length; lg++) {
         html += '<strong>' + ts.legendArray[lg].abbr + '</strong> – ' + ts.legendArray[lg].label;
         if (lg < ts.legendArray.length - 1) {
           html += '&nbsp;&nbsp;|&nbsp;&nbsp;';
         }
       }
-      html += '</td>';
-      html += '</tr></table>';
+
+      html += '</td></tr></table>';
     }
 
     return html;
@@ -1335,34 +1306,6 @@ define([
     return returnObj;
   }
 
-  function formatDateMMDDYYYY(dateStr) {
-    if (!dateStr) return '';
-
-    dateStr = String(dateStr);
-
-    if (dateStr.indexOf('/') !== -1) {
-      var parts = dateStr.split('/');
-      if (parts.length === 3) {
-        var m = parseInt(parts[0], 10) - 1;
-        var d = parseInt(parts[1], 10);
-        var yStr = parts[2];
-        if (yStr.length === 2) yStr = '20' + yStr;
-        var y = parseInt(yStr, 10);
-
-        var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        return d + '-' + months[m] + '-' + y;
-      }
-    }
-
-    var dt = new Date(dateStr);
-    if (!isNaN(dt)) {
-      var months2 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      return dt.getDate() + '-' + months2[dt.getMonth()] + '-' + dt.getFullYear();
-    }
-
-    return dateStr;
-  }
-
   function getDayName(dateStr) {
     var date = new Date(dateStr);
     if (isNaN(date)) return '';
@@ -1385,21 +1328,11 @@ define([
   }
 
   function excelCurrencyStyle() {
-    return 'mso-number-format:"\\$"#\\,##0.00;';
+    return 'mso-number-format:"\\0022$\\0022#,##0.00";';
   }
 
   function excelNumberOneDecimalStyle() {
     return 'mso-number-format:"0.0";';
-  }
-
-  function currentRowNumber(sheet) {
-    return sheet.row;
-  }
-
-  function openTrackedRow(sheet) {
-    var html = '<tr>';
-    sheet.row += 1;
-    return html;
   }
 
   return {
