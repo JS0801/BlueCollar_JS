@@ -903,27 +903,41 @@ log.debug('legendArray', legendArray)
 
       html += '</tr>';
 
-      for (var q = 1; q < labor.length; q++) {
-  var openTag = (q === labor.length - 1) ? '<b>' : '';
-  var closeTag = (q === labor.length - 1) ? '</b>' : '';
-
+      for (var q = 1; q < labor.length - 1; q++) {
   html += '<tr>'
-    + '<td colspan="2">' + openTag + labor[q].employee + closeTag + '</td>'
-    + '<td colspan="2">' + openTag + labor[q].role + closeTag + '</td>'
-    + '<td>' + openTag + labor[q].shiftType + closeTag + '</td>'
-    + '<td>' + openTag + labor[q].shift + closeTag + '</td>';
+    + '<td colspan="2">' + labor[q].employee + '</td>'
+    + '<td colspan="2">' + labor[q].role + '</td>'
+    + '<td>' + labor[q].shiftType + '</td>'
+    + '<td>' + labor[q].shift + '</td>';
 
   for (var w = 0; w < labor[q].days.length; w++) {
-    html += '<td>' + openTag + labor[q].days[w].hours + closeTag + '</td>';
+    html += '<td>' + labor[q].days[w].hours + '</td>';
   }
 
-  html += '<td>' + openTag + labor[q].totalWeek + closeTag + '</td>'
-    + '<td>' + openTag + formatCurrency(labor[q].rate) + closeTag + '</td>'
-    + '<td>' + openTag + formatCurrency(labor[q].amt) + closeTag + '</td>'
+  html += '<td>' + labor[q].totalWeek + '</td>'
+    + '<td>' + formatCurrency(labor[q].rate) + '</td>'
+    + '<td>' + formatCurrency(labor[q].amt) + '</td>'
     + '<td colspan="' + (12 - labor[q].days.length) + '"></td>'
     + '</tr>';
 }
 
+// last element separate
+if (labor.length > 1) {
+  var last = labor[labor.length - 1];
+
+  html += '<tr>'
+    + '<td colspan="5" border-left = "0px"  border-bottom = "0px"></td>'
+    + '<td class="table-header"><b>' + last.employee + '</b></td>';
+
+  for (var w = 0; w < last.days.length; w++) {
+    html += '<td class="table-header"><b>' + last.days[w].hours + '</b></td>';
+  }
+
+  html += '<td class="table-header"><b>' + last.totalWeek + '</b></td>'
+    + '<td class="table-header"><b>' + formatCurrency(last.rate) + '</b></td>'
+    + '<td class="table-header"><b>' + formatCurrency(last.amt) + '</b></td>'
+    + '</tr>';
+}
       html += '</table>';
     }
 
