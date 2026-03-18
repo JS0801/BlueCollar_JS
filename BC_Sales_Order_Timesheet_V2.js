@@ -210,74 +210,134 @@ define([
 
       rowsHtml += ''
         + '<tr>'
-        + '<td colspan="8">' + esc(cat) + '</td>'
-        + '<td colspan="2" align="right">' + money(amt) + '</td>'
-        + '<td colspan="2" align="center">' + pct(txr) + '</td>'
-        + '<td colspan="2" align="right">' + money(Math.abs(txa)) + '</td>'
-        + '<td colspan="2" align="right">' + money(amt + txa) + '</td>'
+        + '<td colspan="8" style="border:none;" >' + esc(cat) + '</td>'
+        + '<td colspan="2" style="border:none;" align="right">' + money(amt) + '</td>'
+        + '<td colspan="2" style="border:none;" align="center">' + pct(txr) + '</td>'
+        + '<td colspan="2" style="border:none;" align="right">' + money(Math.abs(txa)) + '</td>'
+        + '<td colspan="2" style="border:none;" align="right">' + money(amt + txa) + '</td>'
         + '</tr>';
     }
 
     var grandTotal = subTotalExTax + Math.abs(totalTax);
 
+    // var invoiceBlockHtml = ''
+    //   + '<table style="width:100%; border-collapse:collapse; font-family:Arial; border:1px solid #000;">'
+    //   + '<tr>'
+    //   + '<td colspan="12" rowspan="7" style="font-size:30pt; vertical-align:middle; font-weight:bold;">DRAFT INVOICE</td>'
+    //   + '<td colspan="4" rowspan="7" align="right" style="vertical-align:middle; font-weight:bold;"><img src="' + logoUrl + '" height="100" /></td>'
+    //   + '</tr>'
+    //   + '</table>'
+
+    //   + '<table style="width:100%; border-collapse:collapse; font-family:Arial; font-size:10pt; border:1px solid #000;">'
+    //   + '<tr>'
+    //   + '<td colspan="5" rowspan="4" valign="top">'
+    //   + '<b>ATTN:</b><br/>'
+    //   + billAddrHtml
+    //   + '</td>'
+    //   + '<td colspan="6" valign="top"><b>Invoice Date:</b><br/>' + soDate + '</td>'
+    //   + '<td colspan="5" rowspan="4" align="right" valign="top">'
+    //   + subAddrHtml + '<br/>'
+    //   + '<b>ABN:</b> ' + subABN
+    //   + '</td>'
+    //   + '</tr>'
+
+    //   + '<tr><td colspan="6" valign="top"><b>Invoice Number:</b><br/>DRAFT</td></tr>'
+    //   + '<tr><td colspan="6" valign="top"><b>PO Number:</b><br/>' + esc(poNumbers.join(', ')) + '</td></tr>'
+    //   + '<tr><td colspan="6" valign="top"><b>Customer Reference:</b><br/>' + esc(projectRefs.join(', ')) + '</td></tr>'
+
+    //   + '<tr><td colspan="16">&nbsp;</td></tr>'
+    //   + '<tr><td colspan="16"><b>Memo:</b><br/>' + esc(memos.join(' | ')) + '</td></tr>'
+    //   + '<tr><td colspan="16">&nbsp;</td></tr>'
+
+    //   + '<tr style="border-bottom:1px solid #000;">'
+    //   + '<th class="table-header" colspan="8"><b>Description</b></th>'
+    //   + '<th class="table-header" colspan="2" align="right"><b>Price</b></th>'
+    //   + '<th class="table-header" colspan="2" align="center"><b>' + (isAmericas ? 'TAX' : 'GST') + '</b></th>'
+    //   + '<th class="table-header" colspan="2" align="right"><b>' + TAX_LABEL_AMT + '</b></th>'
+    //   + '<th class="table-header" colspan="2" align="right"><b>Amount ' + currencyText + '</b></th>'
+    //   + '</tr>'
+
+    //   + rowsHtml
+
+    //   + '<tr><td colspan="10">&nbsp;</td></tr>'
+    //   + '<tr><td rowspan = "3" colspan="12"></td><td colspan="2" align="right">Subtotal</td><td colspan="2" align="right">' + money(subTotalExTax) + '</td></tr>'
+    //   + '<tr><td colspan="2" align="right">' + TAX_LABEL_TOTAL + '</td><td colspan="2" align="right">' + money(Math.abs(totalTax)) + '</td></tr>'
+    //   + '<tr><td colspan="2" align="right" style="border-top:1px solid #000;"><b>TOTAL ' + currencyText + '</b></td><td colspan="2" align="right" style="border-top:1px solid #000;"><b>' + money(grandTotal) + '</b></td></tr>'
+
+    //   + '<tr><td colspan="16">&nbsp;</td></tr>'
+    //   + '<tr><td colspan="16">'
+    //   + '<b>Sales Orders:</b> ' + esc(soNumbers.join(', ')) + '<br/><br/>'
+    //   + '<b>Customer:</b> ' + esc(customerNames.join(', ')) + '<br/><br/>'
+    //   + '<b>Due Date:</b> ' + dueDate + '<br/><br/>'
+    //   + '<b>Payment Terms:</b> ' + terms + '<br/><br/>'
+    //   + 'Please email remittance advice to ' + remitEmail + '<br/><br/>'
+    //   + '<b>BANK ACCOUNT DETAILS</b><br/>'
+    //   + 'Account Name: ' + acctName + '<br/>'
+    //   + 'Bank: ' + bankName + '<br/>'
+    //   + 'BSB: ' + bsb + '<br/>'
+    //   + 'Account: ' + acctNum
+    //   + '</td></tr>'
+    //   + '</table>';
+
+
     var invoiceBlockHtml = ''
-      + '<table style="width:100%; border-collapse:collapse; font-family:Arial; border:1px solid #000;">'
-      + '<tr>'
-      + '<td colspan="12" rowspan="7" style="font-size:30pt; vertical-align:middle; font-weight:bold;">DRAFT INVOICE</td>'
-      + '<td colspan="4" rowspan="7" align="right" style="vertical-align:middle; font-weight:bold;"><img src="' + logoUrl + '" height="100" /></td>'
-      + '</tr>'
-      + '</table>'
+  + '<table style="width:100%; border-collapse:collapse; font-family:Arial; border:1px solid #000;">'
+  + '<tr>'
+  + '<td colspan="12" rowspan="7" style="font-size:30pt; vertical-align:middle; font-weight:bold; border:none;">DRAFT INVOICE</td>'
+  + '<td colspan="4" rowspan="7" align="right" style="vertical-align:middle; font-weight:bold; border:none;"><img src="' + logoUrl + '" height="100" /></td>'
+  + '</tr>'
+  + '</table>'
 
-      + '<table style="width:100%; border-collapse:collapse; font-family:Arial; font-size:10pt; border:1px solid #000;">'
-      + '<tr>'
-      + '<td colspan="5" rowspan="4" valign="top">'
-      + '<b>ATTN:</b><br/>'
-      + billAddrHtml
-      + '</td>'
-      + '<td colspan="6" valign="top"><b>Invoice Date:</b><br/>' + soDate + '</td>'
-      + '<td colspan="5" rowspan="4" align="right" valign="top">'
-      + subAddrHtml + '<br/>'
-      + '<b>ABN:</b> ' + subABN
-      + '</td>'
-      + '</tr>'
+  + '<table style="width:100%; border-collapse:collapse; font-family:Arial; font-size:10pt; border:1px solid #000;">'
+  + '<tr>'
+  + '<td colspan="5" rowspan="4" valign="top" style="border:none;">'
+  + '<b>ATTN:</b><br/>'
+  + billAddrHtml
+  + '</td>'
+  + '<td colspan="6" valign="top" style="border:none;"><b>Invoice Date:</b><br/>' + soDate + '</td>'
+  + '<td colspan="5" rowspan="4" align="right" valign="top" style="border:none;">'
+  + subAddrHtml + '<br/>'
+  + '<b>ABN:</b> ' + subABN
+  + '</td>'
+  + '</tr>'
 
-      + '<tr><td colspan="6" valign="top"><b>Invoice Number:</b><br/>DRAFT</td></tr>'
-      + '<tr><td colspan="6" valign="top"><b>PO Number:</b><br/>' + esc(poNumbers.join(', ')) + '</td></tr>'
-      + '<tr><td colspan="6" valign="top"><b>Customer Reference:</b><br/>' + esc(projectRefs.join(', ')) + '</td></tr>'
+  + '<tr><td colspan="6" valign="top" style="border:none;"><b>Invoice Number:</b><br/>DRAFT</td></tr>'
+  + '<tr><td colspan="6" valign="top" style="border:none;"><b>PO Number:</b><br/>' + esc(poNumbers.join(', ')) + '</td></tr>'
+  + '<tr><td colspan="6" valign="top" style="border:none;"><b>Customer Reference:</b><br/>' + esc(projectRefs.join(', ')) + '</td></tr>'
 
-      + '<tr><td colspan="16">&nbsp;</td></tr>'
-      + '<tr><td colspan="16"><b>Memo:</b><br/>' + esc(memos.join(' | ')) + '</td></tr>'
-      + '<tr><td colspan="16">&nbsp;</td></tr>'
+  + '<tr><td colspan="16" style="border:none;">&nbsp;</td></tr>'
+  + '<tr><td colspan="16" style="border:none;"><b>Memo:</b><br/>' + esc(memos.join(' | ')) + '</td></tr>'
+  + '<tr><td colspan="16" style="border:none;">&nbsp;</td></tr>'
 
-      + '<tr style="border-bottom:1px solid #000;">'
-      + '<th class="table-header" colspan="8"><b>Description</b></th>'
-      + '<th class="table-header" colspan="2" align="right"><b>Price</b></th>'
-      + '<th class="table-header" colspan="2" align="center"><b>' + (isAmericas ? 'TAX' : 'GST') + '</b></th>'
-      + '<th class="table-header" colspan="2" align="right"><b>' + TAX_LABEL_AMT + '</b></th>'
-      + '<th class="table-header" colspan="2" align="right"><b>Amount ' + currencyText + '</b></th>'
-      + '</tr>'
+  + '<tr>'
+  + '<th class="table-header" colspan="8" style="border:none;"><b>Description</b></th>'
+  + '<th class="table-header" colspan="2" align="right" style="border:none;"><b>Price</b></th>'
+  + '<th class="table-header" colspan="2" align="center" style="border:none;"><b>' + (isAmericas ? 'TAX' : 'GST') + '</b></th>'
+  + '<th class="table-header" colspan="2" align="right" style="border:none;"><b>' + TAX_LABEL_AMT + '</b></th>'
+  + '<th class="table-header" colspan="2" align="right" style="border:none;"><b>Amount ' + currencyText + '</b></th>'
+  + '</tr>'
 
-      + rowsHtml
+  + rowsHtml
 
-      + '<tr><td colspan="10">&nbsp;</td></tr>'
-      + '<tr><td rowspan = "3" colspan="12"></td><td colspan="2" align="right">Subtotal</td><td colspan="2" align="right">' + money(subTotalExTax) + '</td></tr>'
-      + '<tr><td colspan="2" align="right">' + TAX_LABEL_TOTAL + '</td><td colspan="2" align="right">' + money(Math.abs(totalTax)) + '</td></tr>'
-      + '<tr><td colspan="2" align="right" style="border-top:1px solid #000;"><b>TOTAL ' + currencyText + '</b></td><td colspan="2" align="right" style="border-top:1px solid #000;"><b>' + money(grandTotal) + '</b></td></tr>'
+  + '<tr><td colspan="10" style="border:none;">&nbsp;</td></tr>'
+  + '<tr><td rowspan="3" colspan="12" style="border:none;"></td><td colspan="2" align="right" style="border:none;">Subtotal</td><td colspan="2" align="right" style="border:none;">' + money(subTotalExTax) + '</td></tr>'
+  + '<tr><td colspan="2" align="right" style="border:none;">' + TAX_LABEL_TOTAL + '</td><td colspan="2" align="right" style="border:none;">' + money(Math.abs(totalTax)) + '</td></tr>'
+  + '<tr><td colspan="2" align="right" style="border:none;"><b>TOTAL ' + currencyText + '</b></td><td colspan="2" align="right" style="border:none;"><b>' + money(grandTotal) + '</b></td></tr>'
 
-      + '<tr><td colspan="16">&nbsp;</td></tr>'
-      + '<tr><td colspan="16">'
-      + '<b>Sales Orders:</b> ' + esc(soNumbers.join(', ')) + '<br/><br/>'
-      + '<b>Customer:</b> ' + esc(customerNames.join(', ')) + '<br/><br/>'
-      + '<b>Due Date:</b> ' + dueDate + '<br/><br/>'
-      + '<b>Payment Terms:</b> ' + terms + '<br/><br/>'
-      + 'Please email remittance advice to ' + remitEmail + '<br/><br/>'
-      + '<b>BANK ACCOUNT DETAILS</b><br/>'
-      + 'Account Name: ' + acctName + '<br/>'
-      + 'Bank: ' + bankName + '<br/>'
-      + 'BSB: ' + bsb + '<br/>'
-      + 'Account: ' + acctNum
-      + '</td></tr>'
-      + '</table>';
+  + '<tr><td colspan="16" style="border:none;">&nbsp;</td></tr>'
+  + '<tr><td colspan="16" style="border:none;">'
+  + '<b>Sales Orders:</b> ' + esc(soNumbers.join(', ')) + '<br/><br/>'
+  + '<b>Customer:</b> ' + esc(customerNames.join(', ')) + '<br/><br/>'
+  + '<b>Due Date:</b> ' + dueDate + '<br/><br/>'
+  + '<b>Payment Terms:</b> ' + terms + '<br/><br/>'
+  + 'Please email remittance advice to ' + remitEmail + '<br/><br/>'
+  + '<b>BANK ACCOUNT DETAILS</b><br/>'
+  + 'Account Name: ' + acctName + '<br/>'
+  + 'Bank: ' + bankName + '<br/>'
+  + 'BSB: ' + bsb + '<br/>'
+  + 'Account: ' + acctNum
+  + '</td></tr>'
+  + '</table>';
 
     return {
       tranIds: tranIds,
