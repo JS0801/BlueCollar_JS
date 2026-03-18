@@ -872,8 +872,8 @@ log.debug('legendArray', legendArray)
       + '</tr>'
       + '</table>'
       + '<br/><br/><br/>';
-    log.debug('LaborMap', x.Labor)
-    if (x.Labor) {
+    log.debug('LaborMap', x.Labor || x.Labour)
+    if (x.Labor || x.Labour) {
       html += '<table>'
         + '<tr>'
         + '<th class="table-header" colspan="6">' + labelLabor + '</th>'
@@ -885,7 +885,7 @@ log.debug('legendArray', legendArray)
         + '<th class="table-header" rowspan="2">Time Type</th>'
         + '<th class="table-header" rowspan="2">Shift Type</th>';
 
-      var labor = x.Labor;
+      var labor = x.Labor || x.Labour;
       for (var i1 = 0; i1 < labor[0].days.length; i1++) {
         html += '<th class="table-header">' + getDayName(labor[0].days[i1].date) + '</th>';
       }
