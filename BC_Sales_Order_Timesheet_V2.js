@@ -926,7 +926,7 @@ if (labor.length > 1) {
   var last = labor[labor.length - 1];
 
   html += '<tr>'
-    + '<td colspan="5" border-left = "0px"  border-bottom = "0px"></td>'
+    + '<td colspan="5" style="border-left: 0; border-bottom: 0;"></td>'
     + '<td class="table-header"><b>' + last.employee + '</b></td>';
 
   for (var w = 0; w < last.days.length; w++) {
