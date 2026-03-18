@@ -210,11 +210,11 @@ define([
 
       rowsHtml += ''
         + '<tr>'
-        + '<td colspan="8" style="border:none;" >' + esc(cat) + '</td>'
-        + '<td colspan="2" style="border:none;" align="right">' + money(amt) + '</td>'
-        + '<td colspan="2" style="border:none;" align="center">' + pct(txr) + '</td>'
-        + '<td colspan="2" style="border:none;" align="right">' + money(Math.abs(txa)) + '</td>'
-        + '<td colspan="2" style="border:none;" align="right">' + money(amt + txa) + '</td>'
+        + '<td colspan="8" style="border-right:0px; border-bottom: 1px solid #999;" >' + esc(cat) + '</td>'
+        + '<td colspan="2" style="border-right:0px; border-left:0px; border-bottom: 1px solid #999;" align="right">' + money(amt) + '</td>'
+        + '<td colspan="2" style="border-right:0px; border-left:0px; border-bottom: 1px solid #999;" align="center">' + pct(txr) + '</td>'
+        + '<td colspan="2" style="border-right:0px; border-left:0px; border-bottom: 1px solid #999;" align="right">' + money(Math.abs(txa)) + '</td>'
+        + '<td colspan="2" style="border-left:0px; border-bottom: 1p solid #999;" align="right">' + money(amt + txa) + '</td>'
         + '</tr>';
     }
 
@@ -311,9 +311,9 @@ define([
 
   + '<tr>'
   + '<th  colspan="8" style="border-top:0px; border-right:0px; border-bottom: 1px;"><b>Description</b></th>'
-  + '<th  colspan="2" align="right" style="border-top:0px; border-right:0px; border-bottom: 1px;"><b>Price</b></th>'
-  + '<th  colspan="2" align="center" style="border-top:0px; border-right:0px; border-bottom: 1px;"><b>' + (isAmericas ? 'TAX' : 'GST') + '</b></th>'
-  + '<th  colspan="2" align="right" style="border-top:0px; border-right:0px;border-bottom: 1px;"><b>' + TAX_LABEL_AMT + '</b></th>'
+  + '<th  colspan="2" align="right" style="border-top:0px; border-right:0px; border-left:0px; border-bottom: 1px;"><b>Price</b></th>'
+  + '<th  colspan="2" align="center" style="border-top:0px; border-right:0px; border-left:0px; border-bottom: 1px;"><b>' + (isAmericas ? 'TAX' : 'GST') + '</b></th>'
+  + '<th  colspan="2" align="right" style="border-top:0px; border-right:0px; border-left:0px; border-bottom: 1px;"><b>' + TAX_LABEL_AMT + '</b></th>'
   + '<th  colspan="2" align="right" style="border-top:0px; border-bottom: 1px;"><b>Amount ' + currencyText + '</b></th>'
   + '</tr>'
 
