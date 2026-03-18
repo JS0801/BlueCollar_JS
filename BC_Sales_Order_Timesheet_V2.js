@@ -310,11 +310,11 @@ define([
   + '<tr><td colspan="16" style="border:none;">&nbsp;</td></tr>'
 
   + '<tr>'
-  + '<th class="table-header" colspan="8" style="border:none;"><b>Description</b></th>'
-  + '<th class="table-header" colspan="2" align="right" style="border:none;"><b>Price</b></th>'
-  + '<th class="table-header" colspan="2" align="center" style="border:none;"><b>' + (isAmericas ? 'TAX' : 'GST') + '</b></th>'
-  + '<th class="table-header" colspan="2" align="right" style="border:none;"><b>' + TAX_LABEL_AMT + '</b></th>'
-  + '<th class="table-header" colspan="2" align="right" style="border:none;"><b>Amount ' + currencyText + '</b></th>'
+  + '<th  colspan="8" style="border:none; border-bottom: 1px;"><b>Description</b></th>'
+  + '<th  colspan="2" align="right" style="border:none; border-bottom: 1px;"><b>Price</b></th>'
+  + '<th  colspan="2" align="center" style="border:none; border-bottom: 1px;"><b>' + (isAmericas ? 'TAX' : 'GST') + '</b></th>'
+  + '<th  colspan="2" align="right" style="border:none; border-bottom: 1px;"><b>' + TAX_LABEL_AMT + '</b></th>'
+  + '<th  colspan="2" align="right" style="border:none; border-bottom: 1px;"><b>Amount ' + currencyText + '</b></th>'
   + '</tr>'
 
   + rowsHtml
