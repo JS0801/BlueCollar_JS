@@ -210,11 +210,11 @@ define([
 
       rowsHtml += ''
         + '<tr>'
-        + '<td colspan="8" style="border-right:0px; border-top:0px; border-bottom: 1px solid #999;" >' + esc(cat) + '</td>'
-        + '<td colspan="2" style="border-right:0px;  border-top:0px; border-left:0px; border-bottom: 1px solid #999;" align="right">' + money(amt) + '</td>'
-        + '<td colspan="2" style="border-right:0px;  border-top:0px; border-left:0px; border-bottom: 1px solid #999;" align="center">' + pct(txr) + '</td>'
-        + '<td colspan="2" style="border-right:0px;  border-top:0px; border-left:0px; border-bottom: 1px solid #999;" align="right">' + money(Math.abs(txa)) + '</td>'
-        + '<td colspan="2" style="border-left:0px;  border-top:0px; border-bottom: 1px solid #999;" align="right">' + money(amt + txa) + '</td>'
+        + '<td colspan="8" style="border-right:0px; border-top:0px; border-bottom: 1px solid #C9C9C9;" >' + esc(cat) + '</td>'
+        + '<td colspan="2" style="border-right:0px;  border-top:0px; border-left:0px; border-bottom: 1px solid #C9C9C9;" align="right">' + money(amt) + '</td>'
+        + '<td colspan="2" style="border-right:0px;  border-top:0px; border-left:0px; border-bottom: 1px solid #C9C9C9;" align="center">' + pct(txr) + '</td>'
+        + '<td colspan="2" style="border-right:0px;  border-top:0px; border-left:0px; border-bottom: 1px solid #C9C9C9;" align="right">' + money(Math.abs(txa)) + '</td>'
+        + '<td colspan="2" style="border-left:0px;  border-top:0px; border-bottom: 1px solid #C9C9C9;" align="right">' + money(amt + txa) + '</td>'
         + '</tr>';
     }
 
