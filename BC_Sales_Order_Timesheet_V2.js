@@ -850,8 +850,8 @@ log.debug('legendArray', legendArray)
       + '<td colspan="2" style="width:49%; vertical-align:top;">'
       + '<table style="width:100%; border-collapse:collapse;">'
       + '<tr><td class="info-header" colspan="2">Client:</td><td style="border:1px solid #000;" colspan="4">' + esc(h.client) + '</td></tr>'
-      + '<tr><td class="info-header" colspan="2">Customer Ref #:</td><td style="border:1px solid #000; mso-number-format:\\@;" colspan="4">="' + esc(h.customerRef) + '</td></tr>'
-      + '<tr><td class="info-header" colspan="2">Week-Ending:</td><td style="border:1px solid #000;" colspan="4">' + formatDateMMDDYYYY(h.weekEnding) + '</td></tr>'
+      + '<tr><td class="info-header" colspan="2">Customer Ref #:</td><td style="border:1px solid #000; " colspan="4">' + esc(h.customerRef) + '</td></tr>'
+      + '<tr><td class="info-header" colspan="2">Week-Ending:</td><td style="border:1px solid #000; mso-number-format:\\@;" colspan="4">' + formatDateMMDDYYYY(h.weekEnding) + '</td></tr>'
       + '<tr><td class="info-header" colspan="2">C2O Project Manager:</td><td style="border:1px solid #000;" colspan="4">' + esc(h.projectManager) + '</td></tr>'
       + '<tr><td class="info-header" colspan="2">Description of Work:</td><td style="border:1px solid #000;" colspan="4">' + esc(h.description) + '</td></tr>'
       + '<tr><td class="info-header" colspan="2">Document #:</td><td style="border:1px solid #000;" colspan="4">' + esc(h.docNumber) + '</td></tr>'
@@ -898,7 +898,7 @@ log.debug('legendArray', legendArray)
         + '<tr>';
 
       for (var i2 = 0; i2 < labor[0].days.length; i2++) {
-        html += '<th class="table-header" style="mso-number-format:\\@;">="' + formatDateMMDDYYYY(labor[0].days[i2].date) + '</th>';
+        html += '<th class="table-header" style="mso-number-format:\\@;">' + formatDateMMDDYYYY(labor[0].days[i2].date) + '</th>';
       }
 
       html += '</tr>';
@@ -945,7 +945,7 @@ log.debug('legendArray', legendArray)
         + '<tr>';
 
       for (var e2 = 0; e2 < equp[0].days.length; e2++) {
-        html += '<th style="mso-number-format:\\@;">="' + formatDateMMDDYYYY(equp[0].days[e2].date) + '</th>';
+        html += '<th style="mso-number-format:\\@;">' + formatDateMMDDYYYY(equp[0].days[e2].date) + '</th>';
       }
 
       html += '</tr>';
