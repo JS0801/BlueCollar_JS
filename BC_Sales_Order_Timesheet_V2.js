@@ -1028,10 +1028,10 @@ if (labor.length > 1) {
         var e = x.Expenses[a];
         if (e.documentNumber === 'TOTAL') {
           html += '<tr>'
-            + '<td colspan="13" style="border:0px solid #000;"></td>'
-            + '<td colspan="2" align="right" style="background-color:#3a4b87; color:white; font-weight:bold;">Total</td>'
-            + '<td align="right"></td>'
-            + '<td align="right" style="font-weight:bold;">' + e.amount + '</td>'
+            + '<td colspan="5" style="border:0px solid #000; background-color:#3a4b87; color:white; font-weight:bold;">Total</td>'
+            + '<td colspan="10" align="right"></td>'
+            + '<td align="right" style="background-color:#3a4b87; color:white; font-weight:bold;">' + e.cost + '</td>'
+            + '<td align="right" style="background-color:#3a4b87; color:white; font-weight:bold;">' + e.amount + '</td>'
             + '</tr>';
         } else {
           html += '<tr>'
