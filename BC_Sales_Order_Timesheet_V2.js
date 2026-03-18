@@ -281,7 +281,7 @@ define([
 
 
     var invoiceBlockHtml = ''
-  + '<table style="width:100%; border-collapse:collapse; font-family:Arial; border:1px solid #000;">'
+  + '<table style="width:100%; border-collapse:collapse; font-family:Arial; border:1px solid #000; border-bottom:0px solid #000;">'
   + '<tr>'
   + '<td colspan="12" rowspan="7" style="font-size:30pt; vertical-align:middle; font-weight:bold; border:none;">DRAFT INVOICE</td>'
   + '<td colspan="4" rowspan="7" align="right" style="vertical-align:middle; font-weight:bold; border:none;"><img src="' + logoUrl + '" height="100" /></td>'
@@ -310,11 +310,11 @@ define([
   + '<tr><td colspan="16" style="border:none;">&nbsp;</td></tr>'
 
   + '<tr>'
-  + '<th  colspan="8" style="border:none; border-bottom: 1px;"><b>Description</b></th>'
-  + '<th  colspan="2" align="right" style="border:none; border-bottom: 1px;"><b>Price</b></th>'
-  + '<th  colspan="2" align="center" style="border:none; border-bottom: 1px;"><b>' + (isAmericas ? 'TAX' : 'GST') + '</b></th>'
-  + '<th  colspan="2" align="right" style="border:none; border-bottom: 1px;"><b>' + TAX_LABEL_AMT + '</b></th>'
-  + '<th  colspan="2" align="right" style="border:none; border-bottom: 1px;"><b>Amount ' + currencyText + '</b></th>'
+  + '<th  colspan="8" style="border-top:0px; border-right:0px; border-bottom: 1px;"><b>Description</b></th>'
+  + '<th  colspan="2" align="right" style="border-top:0px; border-right:0px; border-bottom: 1px;"><b>Price</b></th>'
+  + '<th  colspan="2" align="center" style="border-top:0px; border-right:0px; border-bottom: 1px;"><b>' + (isAmericas ? 'TAX' : 'GST') + '</b></th>'
+  + '<th  colspan="2" align="right" style="border-top:0px; border-right:0px;border-bottom: 1px;"><b>' + TAX_LABEL_AMT + '</b></th>'
+  + '<th  colspan="2" align="right" style="border-top:0px; border-bottom: 1px;"><b>Amount ' + currencyText + '</b></th>'
   + '</tr>'
 
   + rowsHtml
