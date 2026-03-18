@@ -389,33 +389,12 @@ define([
         search.createColumn({ name: 'custcol_bc_time_type', join: 'CUSTCOL_BC_TM_TIME_BILL', summary: 'GROUP' }),
         search.createColumn({ name: 'custcol_bc_tm_billing_shift', join: 'CUSTCOL_BC_TM_TIME_BILL', summary: 'GROUP' }),
         search.createColumn({ name: 'date', join: 'CUSTCOL_BC_TM_TIME_BILL', summary: 'GROUP', sort: search.Sort.ASC }),
-        search.createColumn({
-          name: 'custcol_bc_tm_line_id',
-          summary: 'GROUP'
-        }),
-        search.createColumn({
-          name: 'memo',
-          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
-          summary: 'GROUP'
-        }),
-        search.createColumn({
-          name: 'trandate',
-          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
-          summary: 'GROUP'
-        }),
-        search.createColumn({
-          name: 'quantity',
-          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
-          summary: 'SUM'
-        }),
-        search.createColumn({
-          name: 'rate',
-          summary: 'MAX'
-        }),
-        search.createColumn({
-          name: 'amount',
-          summary: 'SUM'
-        })
+        search.createColumn({ name: 'custcol_bc_tm_line_id', summary: 'GROUP' }),
+        search.createColumn({ name: 'memo', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' }),
+        search.createColumn({ name: 'trandate', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' }),
+        search.createColumn({ name: 'quantity', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'SUM' }),
+        search.createColumn({ name: 'rate', summary: 'MAX' }),
+        search.createColumn({ name: 'amount', summary: 'SUM' })
       ]
     });
 
@@ -602,114 +581,39 @@ define([
         ["formulatext: case when {custcol_bc_tm_line_id} = {custcol_bc_tm_source_transaction.line} then 1 else 0 end", 'is', '1']
       ],
       columns: [
-        search.createColumn({
-          name: 'custcol_invoicing_category',
-          summary: 'GROUP'
-        }),
-        search.createColumn({
-          name: 'tranid',
-          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
-          summary: 'GROUP'
-        }),
-        search.createColumn({
-          name: 'mainname',
-          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
-          summary: 'GROUP'
-        }),
-        search.createColumn({
-          name: 'amount',
-          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
-          summary: 'MAX'
-        }),
-        search.createColumn({
-          name: 'taxamount',
-          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
-          summary: 'MAX'
-        }),
-        search.createColumn({
-          name: 'line',
-          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
-          summary: 'GROUP'
-        }),
-        search.createColumn({
-          name: 'memo',
-          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
-          summary: 'GROUP'
-        }),
+        search.createColumn({ name: 'custcol_invoicing_category', summary: 'GROUP' }),
+        search.createColumn({ name: 'tranid', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' }),
+        search.createColumn({ name: 'mainname', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' }),
+        search.createColumn({ name: 'amount', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'MAX' }),
+        search.createColumn({ name: 'taxamount', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'MAX' }),
+        search.createColumn({ name: 'line', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' }),
+        search.createColumn({ name: 'memo', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' }),
         search.createColumn({
           name: 'formulatext',
           summary: 'MAX',
           formula: "CASE WHEN {custcol_bc_tm_source_transaction.appliedtotransaction} LIKE 'Purchase Order%' THEN TRIM(REPLACE({custcol_bc_tm_source_transaction.appliedtotransaction}, 'Purchase Order', '')) ELSE {custcol_bc_tm_source_transaction.tranid} END"
         }),
-        search.createColumn({
-          name: 'custcol_bc_tm_line_id',
-          summary: 'GROUP'
-        }),
-        search.createColumn({
-          name: 'amount',
-          summary: 'MAX'
-        }),
-        search.createColumn({
-          name: 'expensecategory',
-          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
-          summary: 'GROUP'
-        })
+        search.createColumn({ name: 'custcol_bc_tm_line_id', summary: 'GROUP' }),
+        search.createColumn({ name: 'amount', summary: 'MAX' }),
+        search.createColumn({ name: 'expensecategory', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' })
       ]
     });
 
     var tranFinalArray = {};
 
     transactionSearch.run().each(function (result) {
-      var invoicingCategory = result.getText({
-        name: 'custcol_invoicing_category',
-        summary: 'GROUP'
-      }) || 'Uncategorized';
+      var invoicingCategory = result.getText({ name: 'custcol_invoicing_category', summary: 'GROUP' }) || 'Uncategorized';
 
-      var docNumber = result.getValue({
-        name: 'tranid',
-        join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
-        summary: 'GROUP'
-      }) || '';
+      var docNumber = result.getValue({ name: 'tranid', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' }) || '';
+      var mainName = result.getText({ name: 'mainname', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' }) || '';
+      var expCat = result.getText({ name: 'expensecategory', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' }) || '';
 
-      var mainName = result.getText({
-        name: 'mainname',
-        join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
-        summary: 'GROUP'
-      }) || '';
+      var cost = parseFloat(result.getValue({ name: 'amount', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'MAX' }) || 0) || 0;
+      var tax = parseFloat(result.getValue({ name: 'taxamount', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'MAX' }) || 0) || 0;
+      var amount = parseFloat(result.getValue({ name: 'amount', summary: 'MAX' }) || 0) || 0;
 
-      var expCat = result.getText({
-        name: 'expensecategory',
-        join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
-        summary: 'GROUP'
-      }) || '';
-
-      var cost = parseFloat(result.getValue({
-        name: 'amount',
-        join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
-        summary: 'MAX'
-      }) || 0) || 0;
-
-      var tax = parseFloat(result.getValue({
-        name: 'taxamount',
-        join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
-        summary: 'MAX'
-      }) || 0) || 0;
-
-      var amount = parseFloat(result.getValue({
-        name: 'amount',
-        summary: 'MAX'
-      }) || 0) || 0;
-
-      var memo = result.getValue({
-        name: 'memo',
-        join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
-        summary: 'GROUP'
-      }) || '';
-
-      var cleanedPO = result.getValue({
-        name: 'formulatext',
-        summary: 'MAX'
-      }) || '';
+      var memo = result.getValue({ name: 'memo', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' }) || '';
+      var cleanedPO = result.getValue({ name: 'formulatext', summary: 'MAX' }) || '';
 
       var row = {
         documentNumber: escPlain(docNumber),
@@ -837,8 +741,8 @@ define([
       + '<td colspan="2" style="width:49%; vertical-align:top;">'
       + '<table style="width:100%; border-collapse:collapse;">'
       + '<tr><td class="info-header" colspan="2">Client:</td><td style="border:1px solid #000;" colspan="4">' + esc(h.client) + '</td></tr>'
-      + '<tr><td class="info-header" colspan="2">Customer Ref #:</td><td style="border:1px solid #000; " colspan="4">' + esc(h.customerRef) + '</td></tr>'
-      + '<tr><td class="info-header" colspan="2">Week-Ending:</td><td style="border:1px solid #000; mso-number-format:\\@;" colspan="4">="' + escPlain(h.weekEnding) + '"</td></tr>'
+      + '<tr><td class="info-header" colspan="2">Customer Ref #:</td><td style="border:1px solid #000;" colspan="4">' + esc(h.customerRef) + '</td></tr>'
+      + '<tr><td class="info-header" colspan="2">Week-Ending:</td><td style="border:1px solid #000; mso-number-format:\\@;" colspan="4">' + formatDateDDMONYYYY(h.weekEnding) + '</td></tr>'
       + '<tr><td class="info-header" colspan="2">C2O Project Manager:</td><td style="border:1px solid #000;" colspan="4">' + esc(h.projectManager) + '</td></tr>'
       + '<tr><td class="info-header" colspan="2">Description of Work:</td><td style="border:1px solid #000;" colspan="4">' + esc(h.description) + '</td></tr>'
       + '<tr><td class="info-header" colspan="2">Document #:</td><td style="border:1px solid #000;" colspan="4">' + esc(h.docNumber) + '</td></tr>'
@@ -861,258 +765,19 @@ define([
       + '<br/><br/><br/>';
 
     if (x.Labor || x.Labour) {
-      var labor = x.Labor || x.Labour;
-
-      html += '<table>'
-        + '<tr>'
-        + '<th class="table-header" colspan="6">' + labelLabor + '</th>'
-        + '<td colspan="15" align="center" style="border-top:1px solid #000; border-bottom:1px solid #000; border-left:1px solid #000; border-right:1px solid #000;">ALL HOURS SHOWN ARE HOURS WORKED</td>'
-        + '</tr>'
-        + '<tr>'
-        + '<th class="table-header" colspan="2" rowspan="2">Name</th>'
-        + '<th class="table-header" colspan="2" rowspan="2">Role</th>'
-        + '<th class="table-header" rowspan="2">Time Type</th>'
-        + '<th class="table-header" rowspan="2">Shift Type</th>';
-
-      for (var i1 = 0; i1 < labor[0].days.length; i1++) {
-        html += '<th class="table-header">' + getDayName(labor[0].days[i1].date) + '</th>';
-      }
-
-      html += '<th class="table-header" rowspan="2">Total Week</th>'
-        + '<th class="table-header" rowspan="2">Rate</th>'
-        + '<th class="table-header" rowspan="2">Claim Amount</th>'
-        + '<th class="table-header" rowspan="2" colspan="' + (12 - labor[0].days.length) + '">Notes</th>'
-        + '</tr>'
-        + '<tr>';
-
-      for (var i2 = 0; i2 < labor[0].days.length; i2++) {
-        html += '<th class="table-header" style="mso-number-format:\\@;">="' + escPlain(labor[0].days[i2].date) + '"</th>';
-      }
-
-      html += '</tr>';
-
-      var laborDataStartExcelRow = 4;
-      var laborCurrentExcelRow = laborDataStartExcelRow;
-      var laborFirstDayCol = 7;
-
-      for (var q = 1; q < labor.length - 1; q++) {
-        var totalWeekCol = laborFirstDayCol + labor[q].days.length;
-        var rateCol = totalWeekCol + 1;
-        var amtCol = rateCol + 1;
-
-        html += '<tr>'
-          + '<td colspan="2">' + labor[q].employee + '</td>'
-          + '<td colspan="2">' + labor[q].role + '</td>'
-          + '<td>' + labor[q].shiftType + '</td>'
-          + '<td>' + labor[q].shift + '</td>';
-
-        for (var w = 0; w < labor[q].days.length; w++) {
-          html += '<td style="' + excelNumberOneDecimalStyle() + '">' + labor[q].days[w].hours + '</td>';
-        }
-
-        html += '<td style="' + excelNumberOneDecimalStyle() + '">=SUM('
-          + getCellRef(laborCurrentExcelRow, laborFirstDayCol) + ':'
-          + getCellRef(laborCurrentExcelRow, totalWeekCol - 1) + ')</td>';
-
-        html += '<td style="' + excelCurrencyStyle() + '">' + toFixed2(labor[q].rate) + '</td>';
-
-        html += '<td style="' + excelCurrencyStyle() + '">='
-          + getCellRef(laborCurrentExcelRow, totalWeekCol) + '*'
-          + getCellRef(laborCurrentExcelRow, rateCol) + '</td>';
-
-        html += '<td colspan="' + (12 - labor[q].days.length) + '"></td>'
-          + '</tr>';
-
-        laborCurrentExcelRow++;
-      }
-
-      if (labor.length > 1) {
-        var last = labor[labor.length - 1];
-        var laborDataEndExcelRow = laborCurrentExcelRow - 1;
-        var lastTotalWeekCol = laborFirstDayCol + last.days.length;
-        var lastAmtCol = lastTotalWeekCol + 2;
-
-        html += '<tr>'
-          + '<td colspan="5" style="border-left:0; border-bottom:0;"></td>'
-          + '<td class="table-header">TOTAL</td>';
-
-        for (var lw = 0; lw < last.days.length; lw++) {
-          var dayCol = laborFirstDayCol + lw;
-          html += '<td class="table-header" style="' + excelNumberOneDecimalStyle() + '">=SUM('
-            + getCellRef(laborDataStartExcelRow, dayCol) + ':'
-            + getCellRef(laborDataEndExcelRow, dayCol) + ')</td>';
-        }
-
-        html += '<td class="table-header" style="' + excelNumberOneDecimalStyle() + '">=SUM('
-          + getCellRef(laborDataStartExcelRow, lastTotalWeekCol) + ':'
-          + getCellRef(laborDataEndExcelRow, lastTotalWeekCol) + ')</td>';
-
-        html += '<td class="table-header"></td>';
-
-        html += '<td class="table-header" style="' + excelCurrencyStyle() + '">=SUM('
-          + getCellRef(laborDataStartExcelRow, lastAmtCol) + ':'
-          + getCellRef(laborDataEndExcelRow, lastAmtCol) + ')</td>'
-          + '</tr>';
-      }
-
-      html += '</table>';
+      html += buildLaborTable(x.Labor || x.Labour, labelLabor);
     }
 
     if (x['Equipment / Vehicle Rental']) {
-      var equp = x['Equipment / Vehicle Rental'];
-
-      html += '<br/><br/><br/><table>'
-        + '<tr><th colspan="8">Equipment / Vehicle Rental</th></tr>'
-        + '<tr>'
-        + '<th colspan="4" rowspan="2">Role</th>';
-
-      for (var e1 = 0; e1 < equp[0].days.length; e1++) {
-        html += '<th>' + getDayName(equp[0].days[e1].date) + '</th>';
-      }
-
-      html += '<th rowspan="2">Total Week</th>'
-        + '<th rowspan="2" colspan="' + (14 - equp[0].days.length) + '">Notes</th>'
-        + '</tr>'
-        + '<tr>';
-
-      for (var e2 = 0; e2 < equp[0].days.length; e2++) {
-        html += '<th style="mso-number-format:\\@;">="' + escPlain(equp[0].days[e2].date) + '"</th>';
-      }
-
-      html += '</tr>';
-
-      var eqDataStartExcelRow = 4;
-      var eqCurrentExcelRow = eqDataStartExcelRow;
-      var eqFirstDayCol = 5;
-
-      for (var r = 1; r < equp.length - 1; r++) {
-        var eqTotalWeekCol = eqFirstDayCol + equp[r].days.length;
-
-        html += '<tr><td colspan="4">' + equp[r].role + '</td>';
-
-        for (var t = 0; t < equp[r].days.length; t++) {
-          html += '<td style="' + excelNumberOneDecimalStyle() + '">' + equp[r].days[t].hours + '</td>';
-        }
-
-        html += '<td style="' + excelNumberOneDecimalStyle() + '">=SUM('
-          + getCellRef(eqCurrentExcelRow, eqFirstDayCol) + ':'
-          + getCellRef(eqCurrentExcelRow, eqTotalWeekCol - 1) + ')</td>'
-          + '<td colspan="' + (14 - equp[r].days.length) + '"></td>'
-          + '</tr>';
-
-        eqCurrentExcelRow++;
-      }
-
-      if (equp.length > 1) {
-        var eqLast = equp[equp.length - 1];
-        var eqDataEndExcelRow = eqCurrentExcelRow - 1;
-        var eqLastTotalWeekCol = eqFirstDayCol + eqLast.days.length;
-
-        html += '<tr><td colspan="4" class="table-header">TOTAL</td>';
-
-        for (var te = 0; te < eqLast.days.length; te++) {
-          var eqDayCol = eqFirstDayCol + te;
-          html += '<td class="table-header" style="' + excelNumberOneDecimalStyle() + '">=SUM('
-            + getCellRef(eqDataStartExcelRow, eqDayCol) + ':'
-            + getCellRef(eqDataEndExcelRow, eqDayCol) + ')</td>';
-        }
-
-        html += '<td class="table-header" style="' + excelNumberOneDecimalStyle() + '">=SUM('
-          + getCellRef(eqDataStartExcelRow, eqLastTotalWeekCol) + ':'
-          + getCellRef(eqDataEndExcelRow, eqLastTotalWeekCol) + ')</td>'
-          + '<td colspan="' + (14 - eqLast.days.length) + '" class="table-header"></td>'
-          + '</tr>';
-      }
-
-      html += '</table>';
+      html += buildEquipmentTable(x['Equipment / Vehicle Rental']);
     }
 
     if (x.Materials) {
-      html += '<br/><br/><br/><table>'
-        + '<tr><th class="table-header" colspan="5">Materials</th></tr>'
-        + '<tr>'
-        + '<th class="table-header" colspan="2">Supplier Invoice #</th>'
-        + '<th class="table-header" colspan="3">Supplier</th>'
-        + '<th class="table-header" colspan="2">PO #</th>'
-        + '<th class="table-header" colspan="8">Description</th>'
-        + '<th class="table-header">Total Cost excl. Tax</th>'
-        + '<th class="table-header">Cost + Mark up</th>'
-        + '</tr>';
-
-      var matDataStartExcelRow = 3;
-      var matCurrentExcelRow = matDataStartExcelRow;
-
-      for (var p = 0; p < x.Materials.length; p++) {
-        var m = x.Materials[p];
-        if (m.documentNumber === 'TOTAL') continue;
-
-        html += '<tr>'
-          + '<td colspan="2">' + m.documentNumber + '</td>'
-          + '<td colspan="3">' + m.mainName + '</td>'
-          + '<td colspan="2">' + m.cleanedPO + '</td>'
-          + '<td colspan="8">' + m.memo + '</td>'
-          + '<td align="right" style="' + excelCurrencyStyle() + '">' + toFixed2(m.cost) + '</td>'
-          + '<td align="right" style="' + excelCurrencyStyle() + '">' + toFixed2(m.amount) + '</td>'
-          + '</tr>';
-
-        matCurrentExcelRow++;
-      }
-
-      if (matCurrentExcelRow > matDataStartExcelRow) {
-        var matDataEndExcelRow = matCurrentExcelRow - 1;
-
-        html += '<tr>'
-          + '<td colspan="13" style="border:0px solid #000;"></td>'
-          + '<td colspan="2" align="right" style="background-color:#3a4b87; color:white; font-weight:bold;">Total</td>'
-          + '<td align="right" style="' + excelCurrencyStyle() + '">=SUM(P' + matDataStartExcelRow + ':P' + matDataEndExcelRow + ')</td>'
-          + '<td align="right" style="font-weight:bold; ' + excelCurrencyStyle() + '">=SUM(Q' + matDataStartExcelRow + ':Q' + matDataEndExcelRow + ')</td>'
-          + '</tr>';
-      }
-
-      html += '</table>';
+      html += buildMaterialsTable(x.Materials);
     }
 
     if (x.Expenses) {
-      html += '<br/><br/><br/><table>'
-        + '<tr><th class="table-header" colspan="5">Expenses</th></tr>'
-        + '<tr>'
-        + '<th class="table-header" colspan="5">Expense Category</th>'
-        + '<th class="table-header" colspan="2">PO #</th>'
-        + '<th class="table-header" colspan="8">Description</th>'
-        + '<th class="table-header">Total Cost excl. Tax</th>'
-        + '<th class="table-header">Cost + Mark up</th>'
-        + '</tr>';
-
-      var expDataStartExcelRow = 3;
-      var expCurrentExcelRow = expDataStartExcelRow;
-
-      for (var a = 0; a < x.Expenses.length; a++) {
-        var e = x.Expenses[a];
-        if (e.documentNumber === 'TOTAL') continue;
-
-        html += '<tr>'
-          + '<td colspan="5">' + e.expCat + '</td>'
-          + '<td colspan="2">' + e.cleanedPO + '</td>'
-          + '<td colspan="8">' + e.memo + '</td>'
-          + '<td align="right" style="' + excelCurrencyStyle() + '">' + toFixed2(e.cost) + '</td>'
-          + '<td align="right" style="' + excelCurrencyStyle() + '">' + toFixed2(e.amount) + '</td>'
-          + '</tr>';
-
-        expCurrentExcelRow++;
-      }
-
-      if (expCurrentExcelRow > expDataStartExcelRow) {
-        var expDataEndExcelRow = expCurrentExcelRow - 1;
-
-        html += '<tr>'
-          + '<td colspan="5" style="border:0px solid #000; background-color:#3a4b87; color:white; font-weight:bold;">Total</td>'
-          + '<td colspan="10" align="right"></td>'
-          + '<td align="right" style="background-color:#3a4b87; color:white; font-weight:bold; ' + excelCurrencyStyle() + '">=SUM(P' + expDataStartExcelRow + ':P' + expDataEndExcelRow + ')</td>'
-          + '<td align="right" style="background-color:#3a4b87; color:white; font-weight:bold; ' + excelCurrencyStyle() + '">=SUM(Q' + expDataStartExcelRow + ':Q' + expDataEndExcelRow + ')</td>'
-          + '</tr>';
-      }
-
-      html += '</table><br/><br/><br/><br/>';
+      html += buildExpensesTable(x.Expenses);
     }
 
     if (ts.legendArray && ts.legendArray.length > 0) {
@@ -1128,6 +793,344 @@ define([
       html += '</td></tr></table>';
     }
 
+    return html;
+  }
+
+  function buildLaborTable(labor, labelLabor) {
+    var html = '';
+    var tracker = createVisualRowTracker(1);
+
+    html += '<table>';
+
+    var rowNum = advanceVisualRow(tracker, [{
+      rowspan: 1,
+      br: 0
+    }]);
+
+    html += '<tr>'
+      + '<th class="table-header" colspan="6">' + labelLabor + '</th>'
+      + '<td colspan="15" align="center" style="border-top:1px solid #000; border-bottom:1px solid #000; border-left:1px solid #000; border-right:1px solid #000;">ALL HOURS SHOWN ARE HOURS WORKED</td>'
+      + '</tr>';
+
+    advanceVisualRow(tracker, [{
+      rowspan: 2,
+      br: 0
+    }, {
+      rowspan: 2,
+      br: 0
+    }, {
+      rowspan: 2,
+      br: 0
+    }, {
+      rowspan: 2,
+      br: 0
+    }]);
+
+    html += '<tr>'
+      + '<th class="table-header" colspan="2" rowspan="2">Name</th>'
+      + '<th class="table-header" colspan="2" rowspan="2">Role</th>'
+      + '<th class="table-header" rowspan="2">Time Type</th>'
+      + '<th class="table-header" rowspan="2">Shift Type</th>';
+
+    for (var i1 = 0; i1 < labor[0].days.length; i1++) {
+      html += '<th class="table-header">' + getDayName(labor[0].days[i1].date) + '</th>';
+    }
+
+    html += '<th class="table-header" rowspan="2">Total Week</th>'
+      + '<th class="table-header" rowspan="2">Rate</th>'
+      + '<th class="table-header" rowspan="2">Claim Amount</th>'
+      + '<th class="table-header" rowspan="2" colspan="' + (12 - labor[0].days.length) + '">Notes</th>'
+      + '</tr>';
+
+    advanceVisualRow(tracker, [{
+      rowspan: 1,
+      br: 0
+    }]);
+
+    html += '<tr>';
+
+    for (var i2 = 0; i2 < labor[0].days.length; i2++) {
+      html += '<th class="table-header" style="mso-number-format:\\@;">' + formatDateDDMONYYYY(labor[0].days[i2].date) + '</th>';
+    }
+
+    html += '</tr>';
+
+    var firstDataRow = tracker.row;
+
+    for (var q = 1; q < labor.length - 1; q++) {
+      var currentRow = advanceVisualRow(tracker, [{
+        rowspan: 1,
+        br: getBrCount(labor[q].employee)
+      }, {
+        rowspan: 1,
+        br: getBrCount(labor[q].role)
+      }, {
+        rowspan: 1,
+        br: getBrCount(labor[q].shiftType)
+      }, {
+        rowspan: 1,
+        br: getBrCount(labor[q].shift)
+      }]);
+
+      var firstDayCol = 7;
+      var totalWeekCol = firstDayCol + labor[q].days.length;
+      var rateCol = totalWeekCol + 1;
+      var amtCol = rateCol + 1;
+
+      html += '<tr>'
+        + '<td colspan="2">' + labor[q].employee + '</td>'
+        + '<td colspan="2">' + labor[q].role + '</td>'
+        + '<td>' + labor[q].shiftType + '</td>'
+        + '<td>' + labor[q].shift + '</td>';
+
+      for (var w = 0; w < labor[q].days.length; w++) {
+        html += '<td style="' + excelNumberOneDecimalStyle() + '">' + labor[q].days[w].hours + '</td>';
+      }
+
+      html += '<td style="' + excelNumberOneDecimalStyle() + '">=SUM('
+        + getCellRef(currentRow, firstDayCol) + ':'
+        + getCellRef(currentRow, totalWeekCol - 1) + ')</td>';
+
+      html += '<td style="' + excelCurrencyStyle() + '">' + toFixed2(labor[q].rate) + '</td>';
+
+      html += '<td style="' + excelCurrencyStyle() + '">='
+        + getCellRef(currentRow, totalWeekCol) + '*'
+        + getCellRef(currentRow, rateCol) + '</td>';
+
+      html += '<td colspan="' + (12 - labor[q].days.length) + '"></td>'
+        + '</tr>';
+    }
+
+    if (labor.length > 1) {
+      var totalRowNum = advanceVisualRow(tracker, [{ rowspan: 1, br: 0 }]);
+      var last = labor[labor.length - 1];
+      var dataEndRow = totalRowNum - 1;
+      var firstDayCol2 = 7;
+      var totalWeekCol2 = firstDayCol2 + last.days.length;
+      var amtCol2 = totalWeekCol2 + 2;
+
+      html += '<tr>'
+        + '<td colspan="5" style="border-left:0; border-bottom:0;"></td>'
+        + '<td class="table-header" style="font-weight:bold;">TOTAL</td>';
+
+      for (var d = 0; d < last.days.length; d++) {
+        var dayCol = firstDayCol2 + d;
+        html += '<td class="table-header" style="font-weight:bold; ' + excelNumberOneDecimalStyle() + '">=SUM('
+          + getCellRef(firstDataRow, dayCol) + ':'
+          + getCellRef(dataEndRow, dayCol) + ')</td>';
+      }
+
+      html += '<td class="table-header" style="font-weight:bold; ' + excelNumberOneDecimalStyle() + '">=SUM('
+        + getCellRef(firstDataRow, totalWeekCol2) + ':'
+        + getCellRef(dataEndRow, totalWeekCol2) + ')</td>';
+
+      html += '<td class="table-header"></td>';
+
+      html += '<td class="table-header" style="font-weight:bold; ' + excelCurrencyStyle() + '">=SUM('
+        + getCellRef(firstDataRow, amtCol2) + ':'
+        + getCellRef(dataEndRow, amtCol2) + ')</td>'
+        + '</tr>';
+    }
+
+    html += '</table>';
+    return html;
+  }
+
+  function buildEquipmentTable(equp) {
+    var html = '';
+    var tracker = createVisualRowTracker(1);
+
+    html += '<br/><br/><br/><table>';
+
+    advanceVisualRow(tracker, [{ rowspan: 1, br: 0 }]);
+    html += '<tr><th colspan="8">Equipment / Vehicle Rental</th></tr>';
+
+    advanceVisualRow(tracker, [{ rowspan: 2, br: 0 }]);
+    html += '<tr>'
+      + '<th colspan="4" rowspan="2">Role</th>';
+
+    for (var e1 = 0; e1 < equp[0].days.length; e1++) {
+      html += '<th>' + getDayName(equp[0].days[e1].date) + '</th>';
+    }
+
+    html += '<th rowspan="2">Total Week</th>'
+      + '<th rowspan="2" colspan="' + (14 - equp[0].days.length) + '">Notes</th>'
+      + '</tr>';
+
+    advanceVisualRow(tracker, [{ rowspan: 1, br: 0 }]);
+    html += '<tr>';
+
+    for (var e2 = 0; e2 < equp[0].days.length; e2++) {
+      html += '<th style="mso-number-format:\\@;">' + formatDateDDMONYYYY(equp[0].days[e2].date) + '</th>';
+    }
+
+    html += '</tr>';
+
+    var firstDataRow = tracker.row;
+
+    for (var r = 1; r < equp.length - 1; r++) {
+      var currentRow = advanceVisualRow(tracker, [{
+        rowspan: 1,
+        br: getBrCount(equp[r].role)
+      }]);
+
+      var firstDayCol = 5;
+      var totalWeekCol = firstDayCol + equp[r].days.length;
+
+      html += '<tr><td colspan="4">' + equp[r].role + '</td>';
+
+      for (var t = 0; t < equp[r].days.length; t++) {
+        html += '<td style="' + excelNumberOneDecimalStyle() + '">' + equp[r].days[t].hours + '</td>';
+      }
+
+      html += '<td style="' + excelNumberOneDecimalStyle() + '">=SUM('
+        + getCellRef(currentRow, firstDayCol) + ':'
+        + getCellRef(currentRow, totalWeekCol - 1) + ')</td>'
+        + '<td colspan="' + (14 - equp[r].days.length) + '"></td>'
+        + '</tr>';
+    }
+
+    if (equp.length > 1) {
+      var totalRowNum = advanceVisualRow(tracker, [{ rowspan: 1, br: 0 }]);
+      var eqLast = equp[equp.length - 1];
+      var dataEndRow = totalRowNum - 1;
+      var firstDayCol2 = 5;
+      var totalWeekCol2 = firstDayCol2 + eqLast.days.length;
+
+      html += '<tr><td colspan="4" class="table-header">TOTAL</td>';
+
+      for (var te = 0; te < eqLast.days.length; te++) {
+        var eqDayCol = firstDayCol2 + te;
+        html += '<td class="table-header" style="' + excelNumberOneDecimalStyle() + '">=SUM('
+          + getCellRef(firstDataRow, eqDayCol) + ':'
+          + getCellRef(dataEndRow, eqDayCol) + ')</td>';
+      }
+
+      html += '<td class="table-header" style="' + excelNumberOneDecimalStyle() + '">=SUM('
+        + getCellRef(firstDataRow, totalWeekCol2) + ':'
+        + getCellRef(dataEndRow, totalWeekCol2) + ')</td>'
+        + '<td colspan="' + (14 - eqLast.days.length) + '" class="table-header"></td>'
+        + '</tr>';
+    }
+
+    html += '</table>';
+    return html;
+  }
+
+  function buildMaterialsTable(materials) {
+    var html = '';
+    var tracker = createVisualRowTracker(1);
+
+    html += '<br/><br/><br/><table>'
+      + '<tr><th class="table-header" colspan="5">Materials</th></tr>'
+      + '<tr>'
+      + '<th class="table-header" colspan="2">Supplier Invoice #</th>'
+      + '<th class="table-header" colspan="3">Supplier</th>'
+      + '<th class="table-header" colspan="2">PO #</th>'
+      + '<th class="table-header" colspan="8">Description</th>'
+      + '<th class="table-header">Total Cost excl. Tax</th>'
+      + '<th class="table-header">Cost + Mark up</th>'
+      + '</tr>';
+
+    advanceVisualRow(tracker, [{ rowspan: 1, br: 0 }]);
+    advanceVisualRow(tracker, [{ rowspan: 1, br: 0 }]);
+
+    var firstDataRow = tracker.row;
+
+    for (var p = 0; p < materials.length; p++) {
+      var m = materials[p];
+      if (m.documentNumber === 'TOTAL') continue;
+
+      var currentRow = advanceVisualRow(tracker, [{
+        rowspan: 1,
+        br: maxVal(
+          getBrCount(m.documentNumber),
+          getBrCount(m.mainName),
+          getBrCount(m.cleanedPO),
+          getBrCount(m.memo)
+        )
+      }]);
+
+      html += '<tr>'
+        + '<td colspan="2">' + m.documentNumber + '</td>'
+        + '<td colspan="3">' + m.mainName + '</td>'
+        + '<td colspan="2">' + m.cleanedPO + '</td>'
+        + '<td colspan="8">' + m.memo + '</td>'
+        + '<td align="right" style="' + excelCurrencyStyle() + '">' + toFixed2(m.cost) + '</td>'
+        + '<td align="right" style="' + excelCurrencyStyle() + '">' + toFixed2(m.amount) + '</td>'
+        + '</tr>';
+    }
+
+    if (tracker.row > firstDataRow) {
+      var totalRowNum = advanceVisualRow(tracker, [{ rowspan: 1, br: 0 }]);
+      var dataEndRow = totalRowNum - 1;
+
+      html += '<tr>'
+        + '<td colspan="13" style="border:0px solid #000;"></td>'
+        + '<td colspan="2" align="right" style="background-color:#3a4b87; color:white; font-weight:bold;">Total</td>'
+        + '<td align="right" style="' + excelCurrencyStyle() + '">=SUM(P' + firstDataRow + ':P' + dataEndRow + ')</td>'
+        + '<td align="right" style="font-weight:bold; ' + excelCurrencyStyle() + '">=SUM(Q' + firstDataRow + ':Q' + dataEndRow + ')</td>'
+        + '</tr>';
+    }
+
+    html += '</table>';
+    return html;
+  }
+
+  function buildExpensesTable(expenses) {
+    var html = '';
+    var tracker = createVisualRowTracker(1);
+
+    html += '<br/><br/><br/><table>'
+      + '<tr><th class="table-header" colspan="5">Expenses</th></tr>'
+      + '<tr>'
+      + '<th class="table-header" colspan="5">Expense Category</th>'
+      + '<th class="table-header" colspan="2">PO #</th>'
+      + '<th class="table-header" colspan="8">Description</th>'
+      + '<th class="table-header">Total Cost excl. Tax</th>'
+      + '<th class="table-header">Cost + Mark up</th>'
+      + '</tr>';
+
+    advanceVisualRow(tracker, [{ rowspan: 1, br: 0 }]);
+    advanceVisualRow(tracker, [{ rowspan: 1, br: 0 }]);
+
+    var firstDataRow = tracker.row;
+
+    for (var a = 0; a < expenses.length; a++) {
+      var e = expenses[a];
+      if (e.documentNumber === 'TOTAL') continue;
+
+      var currentRow = advanceVisualRow(tracker, [{
+        rowspan: 1,
+        br: maxVal(
+          getBrCount(e.expCat),
+          getBrCount(e.cleanedPO),
+          getBrCount(e.memo)
+        )
+      }]);
+
+      html += '<tr>'
+        + '<td colspan="5">' + e.expCat + '</td>'
+        + '<td colspan="2">' + e.cleanedPO + '</td>'
+        + '<td colspan="8">' + e.memo + '</td>'
+        + '<td align="right" style="' + excelCurrencyStyle() + '">' + toFixed2(e.cost) + '</td>'
+        + '<td align="right" style="' + excelCurrencyStyle() + '">' + toFixed2(e.amount) + '</td>'
+        + '</tr>';
+    }
+
+    if (tracker.row > firstDataRow) {
+      var totalRowNum = advanceVisualRow(tracker, [{ rowspan: 1, br: 0 }]);
+      var dataEndRow = totalRowNum - 1;
+
+      html += '<tr>'
+        + '<td colspan="5" style="border:0px solid #000; background-color:#3a4b87; color:white; font-weight:bold;">Total</td>'
+        + '<td colspan="10" align="right"></td>'
+        + '<td align="right" style="background-color:#3a4b87; color:white; font-weight:bold; ' + excelCurrencyStyle() + '">=SUM(P' + firstDataRow + ':P' + dataEndRow + ')</td>'
+        + '<td align="right" style="background-color:#3a4b87; color:white; font-weight:bold; ' + excelCurrencyStyle() + '">=SUM(Q' + firstDataRow + ':Q' + dataEndRow + ')</td>'
+        + '</tr>';
+    }
+
+    html += '</table><br/><br/><br/><br/>';
     return html;
   }
 
@@ -1306,6 +1309,34 @@ define([
     return returnObj;
   }
 
+  function formatDateDDMONYYYY(dateStr) {
+    if (!dateStr) return '';
+
+    dateStr = String(dateStr);
+
+    if (dateStr.indexOf('/') !== -1) {
+      var parts = dateStr.split('/');
+      if (parts.length === 3) {
+        var m = parseInt(parts[0], 10) - 1;
+        var d = parseInt(parts[1], 10);
+        var yStr = parts[2];
+        if (yStr.length === 2) yStr = '20' + yStr;
+        var y = parseInt(yStr, 10);
+
+        var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return d + '-' + months[m] + '-' + y;
+      }
+    }
+
+    var dt = new Date(dateStr);
+    if (!isNaN(dt)) {
+      var months2 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return dt.getDate() + '-' + months2[dt.getMonth()] + '-' + dt.getFullYear();
+    }
+
+    return dateStr;
+  }
+
   function getDayName(dateStr) {
     var date = new Date(dateStr);
     if (isNaN(date)) return '';
@@ -1333,6 +1364,44 @@ define([
 
   function excelNumberOneDecimalStyle() {
     return 'mso-number-format:"0.0";';
+  }
+
+  function createVisualRowTracker(startRow) {
+    return {
+      row: startRow || 1
+    };
+  }
+
+  function advanceVisualRow(tracker, cells) {
+    var currentRow = tracker.row;
+    var visualHeight = 1;
+    var i;
+
+    for (i = 0; i < cells.length; i++) {
+      var rs = parseInt(cells[i].rowspan || 1, 10);
+      var br = parseInt(cells[i].br || 0, 10);
+      var height = rs + br;
+      if (height > visualHeight) visualHeight = height;
+    }
+
+    tracker.row += visualHeight;
+    return currentRow;
+  }
+
+  function getBrCount(val) {
+    if (val === null || val === undefined) return 0;
+    var s = String(val);
+    var matches = s.match(/<br\s*\/?>/gi);
+    return matches ? matches.length : 0;
+  }
+
+  function maxVal() {
+    var max = 0;
+    for (var i = 0; i < arguments.length; i++) {
+      var v = parseInt(arguments[i] || 0, 10);
+      if (v > max) max = v;
+    }
+    return max;
   }
 
   return {
