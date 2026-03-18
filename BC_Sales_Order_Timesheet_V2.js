@@ -649,7 +649,7 @@ log.debug('legendArray', legendArray)
         search.createColumn({
           name: 'formulatext',
           summary: 'MAX',
-          formula: "CASE WHEN {custcol_bc_tm_source_transaction.appliedtotransaction} LIKE 'Purchase Order%' THEN TRIM(REPLACE({custcol_bc_tm_source_transaction.appliedtotransaction}, 'Purchase Order', '')) END"
+          formula: "CASE WHEN {custcol_bc_tm_source_transaction.appliedtotransaction} LIKE 'Purchase Order%' THEN TRIM(REPLACE({custcol_bc_tm_source_transaction.appliedtotransaction}, 'Purchase Order', '')) ELSE {custcol_bc_tm_source_transaction.tranid} END"
         }),
         search.createColumn({
           name: 'custcol_bc_tm_line_id',
