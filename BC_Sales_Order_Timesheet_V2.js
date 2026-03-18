@@ -288,7 +288,7 @@ define([
   + '</tr>'
   + '</table>'
 
-  + '<table style="width:100%; border-collapse:collapse; font-family:Arial; font-size:10pt; border:1px solid #000; border-bottom:0px solid #000;">'
+  + '<table style="width:100%; border-collapse:collapse; font-family:Arial; font-size:10pt; border:1px solid #000; border-bottom:0px solid #000; border-top:0px solid #000;">'
   + '<tr>'
   + '<td colspan="5" rowspan="4" valign="top" style="border:none;">'
   + '<b>ATTN:</b><br/>'
