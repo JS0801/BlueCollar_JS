@@ -322,7 +322,7 @@ define([
   + '<tr><td colspan="10" style="border:none;">&nbsp;</td></tr>'
   + '<tr><td rowspan="3" colspan="12" style="border:none;"></td><td colspan="2" align="right" style="border:none;">Subtotal</td><td colspan="2" align="right" style="border:none;">' + money(subTotalExTax) + '</td></tr>'
   + '<tr><td colspan="2" align="right" style="border:none;">' + TAX_LABEL_TOTAL + '</td><td colspan="2" align="right" style="border:none;">' + money(Math.abs(totalTax)) + '</td></tr>'
-  + '<tr><td colspan="2" align="right" style="border:none;"><b>TOTAL ' + currencyText + '</b></td><td colspan="2" align="right" style="border:none;"><b>' + money(grandTotal) + '</b></td></tr>'
+  + '<tr><td colspan="2" align="right" style="border-top:1px; border-left:0px; border-right:0px; border-bottom: 0px;"><b>TOTAL ' + currencyText + '</b></td><td colspan="2" align="right" style="border-top:1px; border-right:0px; border-bottom: 0px;"><b>' + money(grandTotal) + '</b></td></tr>'
 
   + '<tr><td colspan="16" style="border:none;">&nbsp;</td></tr>'
   + '<tr><td colspan="16" style="border:none;">'
