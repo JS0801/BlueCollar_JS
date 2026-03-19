@@ -1,6 +1,13 @@
 /**
  * @NApiVersion 2.1
  * @NScriptType Suitelet
+ * 
+ * MODIFIED: Excel formulas for calculated fields instead of hardcoded values.
+ * Fields with formulas:
+ *   - Labour: Total Week, Claim Amount, TOTAL row (day sums, total week, claim amount)
+ *   - Expenses: Total Cost excl. Tax, Cost + Mark up (TOTAL row)
+ *   - Materials: Total Cost excl. Tax, Cost + Mark up (TOTAL row)
+ *   - Draft Invoice: GST Amount, Amount (per category), Subtotal, GST Total, Grand Total
  */
 define([
   'N/ui/serverWidget',
@@ -30,8 +37,10 @@ define([
 
       var empNameArr = getEmployeeList();
 
+      // 1) Consolidated draft invoice data for ALL tranids together
       var invoiceData = buildConsolidatedInvoiceData(tranIds);
 
+      // 2) Timesheet data PER tranid
       var timesheetDataByTran = [];
       for (var i = 0; i < tranIds.length; i++) {
         timesheetDataByTran.push(buildTimesheetData(tranIds[i], empNameArr));
@@ -191,10 +200,32 @@ define([
       }
     }
 
+    // =========================================================================
+    // MODIFIED: Invoice rows now output raw numbers + x:fmla for GST AMT and 
+    // Amount columns. The layout uses 16 columns (A-P) due to colspans.
+    //
+    // Invoice table column mapping (with colspans):
+    //   A-H (colspan 8) = Description
+    //   I-J (colspan 2) = Price
+    //   K-L (colspan 2) = GST Rate %
+    //   M-N (colspan 2) = GST AMT       <-- FORMULA: =ABS(I{row}*K{row}/100)
+    //   O-P (colspan 2) = Amount         <-- FORMULA: =I{row}+M{row}
+    //
+    // The header rows before the category data rows take up rows 1-8 in this 
+    // table. Category data starts at row 9. We track the row offset.
+    // =========================================================================
+
     var rowsHtml = '';
     var subTotalExTax = 0;
     var totalTax = 0;
     var categories = Object.keys(catMap).sort();
+
+    // The invoice table header rows occupy rows 1-8 (ATTN, dates, memo, column headers).
+    // Data rows start at Excel row 9 within this table.
+    // But because this is a SEPARATE <table> element, Excel treats it as its own grid.
+    // Row 1 = ATTN row, ... Row 8 = column header row.
+    // First data row = row 9 in this table.
+    var invoiceDataStartRow = 9;
 
     for (var c = 0; c < categories.length; c++) {
       var cat = categories[c];
@@ -205,76 +236,109 @@ define([
       subTotalExTax += amt;
       totalTax += txa;
 
+      var excelRow = invoiceDataStartRow + c;
+
+      // Price column = I (col 9), GST Rate = K (col 11)
+      // GST AMT = M (col 13): formula = I * K / 100
+      // Amount = O (col 15): formula = I + M
+      var fmlaGstAmt = '=ABS(I' + excelRow + '*K' + excelRow + '/100)';
+      var fmlaAmount = '=I' + excelRow + '+M' + excelRow;
+
       rowsHtml += ''
         + '<tr>'
         + '<td colspan="8" style="border-right:0px; border-top:0px; border-bottom: 1px solid #C9C9C9;" >' + esc(cat) + '</td>'
-        + '<td colspan="2" style="border-right:0px;  border-top:0px; border-left:0px; border-bottom: 1px solid #C9C9C9;" align="right">' + money(amt) + '</td>'
-        + '<td colspan="2" style="border-right:0px;  border-top:0px; border-left:0px; border-bottom: 1px solid #C9C9C9;" align="center">' + pct(txr) + '</td>'
-        + '<td colspan="2" style="border-right:0px;  border-top:0px; border-left:0px; border-bottom: 1px solid #C9C9C9;" align="right">' + money(Math.abs(txa)) + '</td>'
-        + '<td colspan="2" style="border-left:0px;  border-top:0px; border-bottom: 1px solid #C9C9C9;" align="right">' + money(amt + txa) + '</td>'
+        + '<td colspan="2" style="border-right:0px;  border-top:0px; border-left:0px; border-bottom: 1px solid #C9C9C9;" align="right">' + amt.toFixed(2) + '</td>'
+        + '<td colspan="2" style="border-right:0px;  border-top:0px; border-left:0px; border-bottom: 1px solid #C9C9C9;" align="center">' + txr.toFixed(2) + '</td>'
+        + '<td colspan="2" style="border-right:0px;  border-top:0px; border-left:0px; border-bottom: 1px solid #C9C9C9;" align="right" x:fmla="' + fmlaGstAmt + '">' + Math.abs(txa).toFixed(2) + '</td>'
+        + '<td colspan="2" style="border-left:0px;  border-top:0px; border-bottom: 1px solid #C9C9C9;" align="right" x:fmla="' + fmlaAmount + '">' + (amt + txa).toFixed(2) + '</td>'
         + '</tr>';
     }
+
+    // Subtotal, GST Total, Grand Total rows with formulas
+    // After the data rows, there's an empty row, then the summary rows.
+    // Empty row = invoiceDataStartRow + categories.length
+    // Subtotal row = invoiceDataStartRow + categories.length + 1
+    // GST Total row = invoiceDataStartRow + categories.length + 2
+    // Grand Total row = invoiceDataStartRow + categories.length + 3
+    var firstDataRow = invoiceDataStartRow;
+    var lastDataRow = invoiceDataStartRow + categories.length - 1;
+    var subtotalRow = lastDataRow + 2; // +1 for empty row, +1 for this row
+    var gstTotalRow = subtotalRow + 1;
+    var grandTotalRow = gstTotalRow + 1;
+
+    var fmlaSubtotal = '=SUM(I' + firstDataRow + ':I' + lastDataRow + ')';
+    var fmlaGstTotal = '=SUM(M' + firstDataRow + ':M' + lastDataRow + ')';
+    var fmlaGrandTotal = '=O' + subtotalRow + '+O' + gstTotalRow;
 
     var grandTotal = subTotalExTax + Math.abs(totalTax);
 
     var invoiceBlockHtml = ''
-      + '<table style="width:100%; border-collapse:collapse; font-family:Arial; border:1px solid #000; border-bottom:0px solid #000;">'
-      + '<tr>'
-      + '<td colspan="11" rowspan="7" style="font-size:30pt; vertical-align:middle; font-weight:bold; border:none;">DRAFT INVOICE</td>'
-      + '<td colspan="5" rowspan="7" align="right" style="vertical-align:middle; font-weight:bold; border:none;"><img src="' + logoUrl + '" height="100" /></td>'
-      + '</tr>'
-      + '</table>'
+  + '<table style="width:100%; border-collapse:collapse; font-family:Arial; border:1px solid #000; border-bottom:0px solid #000;">'
+  + '<tr>'
+  + '<td colspan="11" rowspan="7" style="font-size:30pt; vertical-align:middle; font-weight:bold; border:none;">DRAFT INVOICE</td>'
+  + '<td colspan="5" rowspan="7" align="right" style="vertical-align:middle; font-weight:bold; border:none;"><img src="' + logoUrl + '" height="100" /></td>'
+  + '</tr>'
+  + '</table>'
 
-      + '<table style="width:100%; border-collapse:collapse; font-family:Arial; font-size:10pt; border:1px solid #000; border-top:0px solid #000;">'
-      + '<tr>'
-      + '<td colspan="5" rowspan="4" valign="top" style="border:none;">'
-      + '<b>ATTN:</b><br/>'
-      + billAddrHtml
-      + '</td>'
-      + '<td colspan="6" valign="top" style="border:none;"><b>Invoice Date:</b><br/>' + soDate + '</td>'
-      + '<td colspan="5" rowspan="4" align="right" valign="top" style="border:none;">'
-      + subAddrHtml + '<br/>'
-      + '<b>ABN:</b> ' + subABN
-      + '</td>'
-      + '</tr>'
+  + '<table style="width:100%; border-collapse:collapse; font-family:Arial; font-size:10pt; border:1px solid #000; border-top:0px solid #000;">'
+  + '<tr>'
+  + '<td colspan="5" rowspan="4" valign="top" style="border:none;">'
+  + '<b>ATTN:</b><br/>'
+  + billAddrHtml
+  + '</td>'
+  + '<td colspan="6" valign="top" style="border:none;"><b>Invoice Date:</b><br/>' + soDate + '</td>'
+  + '<td colspan="5" rowspan="4" align="right" valign="top" style="border:none;">'
+  + subAddrHtml + '<br/>'
+  + '<b>ABN:</b> ' + subABN
+  + '</td>'
+  + '</tr>'
 
-      + '<tr><td colspan="6" valign="top" style="border:none;"><b>Invoice Number:</b><br/>DRAFT</td></tr>'
-      + '<tr><td colspan="6" valign="top" style="border:none;"><b>PO Number:</b><br/>' + esc(poNumbers.join(', ')) + '</td></tr>'
-      + '<tr><td colspan="6" valign="top" style="border:none;"><b>Customer Reference:</b><br/>' + esc(projectRefs.join(', ')) + '</td></tr>'
+  + '<tr><td colspan="6" valign="top" style="border:none;"><b>Invoice Number:</b><br/>DRAFT</td></tr>'
+  + '<tr><td colspan="6" valign="top" style="border:none;"><b>PO Number:</b><br/>' + esc(poNumbers.join(', ')) + '</td></tr>'
+  + '<tr><td colspan="6" valign="top" style="border:none;"><b>Customer Reference:</b><br/>' + esc(projectRefs.join(', ')) + '</td></tr>'
 
-      + '<tr><td colspan="16" style="border:none;">&nbsp;</td></tr>'
-      + '<tr><td colspan="16" style="border:none;"><b>Memo:</b><br/>' + esc(memos.join(' | ')) + '</td></tr>'
-      + '<tr><td colspan="16" style="border:none;">&nbsp;</td></tr>'
+  + '<tr><td colspan="16" style="border:none;">&nbsp;</td></tr>'
+  + '<tr><td colspan="16" style="border:none;"><b>Memo:</b><br/>' + esc(memos.join(' | ')) + '</td></tr>'
+  + '<tr><td colspan="16" style="border:none;">&nbsp;</td></tr>'
 
-      + '<tr>'
-      + '<th  colspan="8" align="left"   style="border-top:0px; border-right:0px; border-bottom: 1px;"><b>Description</b></th>'
-      + '<th  colspan="2" align="right"  style="border-top:0px; border-right:0px; border-left:0px; border-bottom: 1px;"><b>Price</b></th>'
-      + '<th  colspan="2" align="center" style="border-top:0px; border-right:0px; border-left:0px; border-bottom: 1px;"><b>' + (isAmericas ? 'TAX' : 'GST') + '</b></th>'
-      + '<th  colspan="2" align="right"  style="border-top:0px; border-right:0px; border-left:0px; border-bottom: 1px;"><b>' + TAX_LABEL_AMT + '</b></th>'
-      + '<th  colspan="2" align="right"  style="border-top:0px; border-left:0px; border-bottom: 1px;"><b>Amount ' + currencyText + '</b></th>'
-      + '</tr>'
+  + '<tr>'
+  + '<th  colspan="8" align="left"   style="border-top:0px; border-right:0px; border-bottom: 1px;"><b>Description</b></th>'
+  + '<th  colspan="2" align="right"  style="border-top:0px; border-right:0px; border-left:0px; border-bottom: 1px;"><b>Price</b></th>'
+  + '<th  colspan="2" align="center" style="border-top:0px; border-right:0px; border-left:0px; border-bottom: 1px;"><b>' + (isAmericas ? 'TAX' : 'GST') + '</b></th>'
+  + '<th  colspan="2" align="right"  style="border-top:0px; border-right:0px; border-left:0px; border-bottom: 1px;"><b>' + TAX_LABEL_AMT + '</b></th>'
+  + '<th  colspan="2" align="right"  style="border-top:0px; border-left:0px; border-bottom: 1px;"><b>Amount ' + currencyText + '</b></th>'
+  + '</tr>'
 
-      + rowsHtml
+  + rowsHtml
 
-      + '<tr><td colspan="10" style="border:none;">&nbsp;</td></tr>'
-      + '<tr><td rowspan="3" colspan="12" style="border:none;"></td><td colspan="2" align="right" style="border:none;">Subtotal</td><td colspan="2" align="right" style="border:none;">' + money(subTotalExTax) + '</td></tr>'
-      + '<tr><td colspan="2" align="right" style="border:none;">' + TAX_LABEL_TOTAL + '</td><td colspan="2" align="right" style="border:none;">' + money(Math.abs(totalTax)) + '</td></tr>'
-      + '<tr><td colspan="2" align="right" style="border-top:1px; border-left:0px; border-right:0px; border-bottom: 0px;"><b>TOTAL ' + currencyText + '</b></td><td colspan="2" align="right" style="border-top:1px; border-right:0px; border-left:0px; border-bottom: 0px;"><b>' + money(grandTotal) + '</b></td></tr>'
+  + '<tr><td colspan="10" style="border:none;">&nbsp;</td></tr>'
+  + '<tr><td rowspan="3" colspan="12" style="border:none;"></td>'
+  +   '<td colspan="2" align="right" style="border:none;">Subtotal</td>'
+  +   '<td colspan="2" align="right" style="border:none;" x:fmla="' + fmlaSubtotal + '">' + subTotalExTax.toFixed(2) + '</td>'
+  + '</tr>'
+  + '<tr>'
+  +   '<td colspan="2" align="right" style="border:none;">' + TAX_LABEL_TOTAL + '</td>'
+  +   '<td colspan="2" align="right" style="border:none;" x:fmla="' + fmlaGstTotal + '">' + Math.abs(totalTax).toFixed(2) + '</td>'
+  + '</tr>'
+  + '<tr>'
+  +   '<td colspan="2" align="right" style="border-top:1px; border-left:0px; border-right:0px; border-bottom: 0px;"><b>TOTAL ' + currencyText + '</b></td>'
+  +   '<td colspan="2" align="right" style="border-top:1px; border-right:0px; border-left:0px; border-bottom: 0px;" x:fmla="' + fmlaGrandTotal + '"><b>' + grandTotal.toFixed(2) + '</b></td>'
+  + '</tr>'
 
-      + '<tr><td colspan="16" style="border:none;">&nbsp;</td></tr>'
-      + '<tr><td colspan="16" style="border:none;">'
-      + '<b>Sales Orders:</b> ' + esc(soNumbers.join(', ')) + '<br/><br/>'
-      + '<b>Customer:</b> ' + esc(customerNames.join(', ')) + '<br/><br/>'
-      + '<b>Due Date:</b> ' + dueDate + '<br/><br/>'
-      + '<b>Payment Terms:</b> ' + terms + '<br/><br/>'
-      + 'Please email remittance advice to ' + remitEmail + '<br/><br/>'
-      + '<b>BANK ACCOUNT DETAILS</b><br/>'
-      + 'Account Name: ' + acctName + '<br/>'
-      + 'Bank: ' + bankName + '<br/>'
-      + 'BSB: ' + bsb + '<br/>'
-      + 'Account: ' + acctNum
-      + '</td></tr>'
-      + '</table>';
+  + '<tr><td colspan="16" style="border:none;">&nbsp;</td></tr>'
+  + '<tr><td colspan="16" style="border:none;">'
+  + '<b>Sales Orders:</b> ' + esc(soNumbers.join(', ')) + '<br/><br/>'
+  + '<b>Customer:</b> ' + esc(customerNames.join(', ')) + '<br/><br/>'
+  + '<b>Due Date:</b> ' + dueDate + '<br/><br/>'
+  + '<b>Payment Terms:</b> ' + terms + '<br/><br/>'
+  + 'Please email remittance advice to ' + remitEmail + '<br/><br/>'
+  + '<b>BANK ACCOUNT DETAILS</b><br/>'
+  + 'Account Name: ' + acctName + '<br/>'
+  + 'Bank: ' + bankName + '<br/>'
+  + 'BSB: ' + bsb + '<br/>'
+  + 'Account: ' + acctNum
+  + '</td></tr>'
+  + '</table>';
 
     return {
       tranIds: tranIds,
@@ -291,25 +355,7 @@ define([
       subTotalExTax: subTotalExTax,
       totalTax: totalTax,
       grandTotal: grandTotal,
-      replaceLabor: replaceLabor,
-      billAddrHtml: billAddrHtml,
-      dueDate: dueDate,
-      terms: terms,
-      currencyText: currencyText,
-      soDate: soDate,
-      isAmericas: isAmericas,
-      TAX_LABEL_RATE: TAX_LABEL_RATE,
-      TAX_LABEL_AMT: TAX_LABEL_AMT,
-      TAX_LABEL_TOTAL: TAX_LABEL_TOTAL,
-      subLegal: subLegal,
-      subAddrHtml: subAddrHtml,
-      subABN: subABN,
-      remitEmail: remitEmail,
-      acctName: acctName,
-      bankName: bankName,
-      bsb: bsb,
-      acctNum: acctNum,
-      catMap: catMap
+      replaceLabor: replaceLabor
     };
   }
 
@@ -372,9 +418,11 @@ define([
     };
 
     var groupedFinalArray = buildTimesheetHourGroups(soId, empNameArr, replaceLabor);
+    log.debug('groupedFinalArray', groupedFinalArray)
     groupedFinalArray = mergeTimesheetSourceTransactionGroups(soId, groupedFinalArray, replaceLabor);
+    log.debug('groupedFinalArray', groupedFinalArray)
     var legendArray = buildLegendArray(groupedFinalArray, replaceLabor);
-
+    log.debug('legendArray', legendArray)
     return {
       soId: soId,
       replaceLabor: replaceLabor,
@@ -385,8 +433,8 @@ define([
   }
 
   function buildTimesheetHourGroups(soId, empNameArr, replaceLabor) {
+    log.debug('soId', soId)
     var shiftSortOrder = ['ST', 'OT', 'OT1.5', 'DT', 'NT', 'RDO'];
-
     var salesorderSearchObj = search.create({
       type: 'salesorder',
       settings: [{ name: 'consolidationtype', value: 'NONE' }],
@@ -411,12 +459,33 @@ define([
         search.createColumn({ name: 'custcol_bc_time_type', join: 'CUSTCOL_BC_TM_TIME_BILL', summary: 'GROUP' }),
         search.createColumn({ name: 'custcol_bc_tm_billing_shift', join: 'CUSTCOL_BC_TM_TIME_BILL', summary: 'GROUP' }),
         search.createColumn({ name: 'date', join: 'CUSTCOL_BC_TM_TIME_BILL', summary: 'GROUP', sort: search.Sort.ASC }),
-        search.createColumn({ name: 'custcol_bc_tm_line_id', summary: 'GROUP' }),
-        search.createColumn({ name: 'memo', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' }),
-        search.createColumn({ name: 'trandate', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' }),
-        search.createColumn({ name: 'quantity', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'SUM' }),
-        search.createColumn({ name: 'rate', summary: 'MAX' }),
-        search.createColumn({ name: 'amount', summary: 'SUM' })
+        search.createColumn({
+          name: 'custcol_bc_tm_line_id',
+          summary: 'GROUP'
+        }),
+        search.createColumn({
+          name: 'memo',
+          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
+          summary: 'GROUP'
+        }),
+        search.createColumn({
+          name: 'trandate',
+          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
+          summary: 'GROUP'
+        }),
+        search.createColumn({
+          name: 'quantity',
+          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
+          summary: 'SUM'
+        }),
+        search.createColumn({
+          name: 'rate',
+          summary: 'MAX'
+        }),
+        search.createColumn({
+          name: 'amount',
+          summary: 'SUM'
+        })
       ]
     });
 
@@ -424,6 +493,7 @@ define([
     var uniqueDates = {};
 
     salesorderSearchObj.run().each(function (result) {
+      log.debug('result', result)
       var billRentalRole = result.getValue({ name: 'memo', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' });
       billRentalRole = (billRentalRole === '- None -' || !billRentalRole) ? '' : billRentalRole;
 
@@ -433,10 +503,10 @@ define([
 
       var shiftType = result.getText({ name: 'custcol_bc_time_type', join: 'CUSTCOL_BC_TM_TIME_BILL', summary: 'GROUP' }) || '';
       var dateStr = result.getValue({ name: 'date', join: 'CUSTCOL_BC_TM_TIME_BILL', summary: 'GROUP' }) ||
-        result.getValue({ name: 'trandate', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' });
+                    result.getValue({ name: 'trandate', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' });
 
       var hours = parseFloat(result.getValue({ name: 'durationdecimal', join: 'CUSTCOL_BC_TM_TIME_BILL', summary: 'SUM' })) ||
-        parseFloat(result.getValue({ name: 'quantity', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'SUM' })) || 0;
+                  parseFloat(result.getValue({ name: 'quantity', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'SUM' })) || 0;
 
       var note = result.getValue({ name: 'memo', join: 'CUSTCOL_BC_TM_TIME_BILL', summary: 'GROUP' }) || '';
       var groupType = result.getText({ name: 'custcol_invoicing_category', summary: 'GROUP' }) || '';
@@ -600,30 +670,68 @@ define([
         'AND',
         ['internalid', 'anyof', [soId]],
         'AND',
-        ['formulatext: case when {custcol_bc_tm_line_id} = {custcol_bc_tm_source_transaction.line} then 1 else 0 end', 'is', '1']
+        ["formulatext: case when {custcol_bc_tm_line_id} = {custcol_bc_tm_source_transaction.line} then 1 else 0 end", 'is', '1']
       ],
       columns: [
-        search.createColumn({ name: 'custcol_invoicing_category', summary: 'GROUP' }),
-        search.createColumn({ name: 'tranid', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' }),
-        search.createColumn({ name: 'mainname', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' }),
-        search.createColumn({ name: 'amount', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'MAX' }),
-        search.createColumn({ name: 'taxamount', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'MAX' }),
-        search.createColumn({ name: 'line', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' }),
-        search.createColumn({ name: 'memo', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' }),
+        search.createColumn({
+          name: 'custcol_invoicing_category',
+          summary: 'GROUP'
+        }),
+        search.createColumn({
+          name: 'tranid',
+          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
+          summary: 'GROUP'
+        }),
+        search.createColumn({
+          name: 'mainname',
+          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
+          summary: 'GROUP'
+        }),
+        search.createColumn({
+          name: 'amount',
+          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
+          summary: 'MAX'
+        }),
+        search.createColumn({
+          name: 'taxamount',
+          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
+          summary: 'MAX'
+        }),
+        search.createColumn({
+          name: 'line',
+          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
+          summary: 'GROUP'
+        }),
+        search.createColumn({
+          name: 'memo',
+          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
+          summary: 'GROUP'
+        }),
         search.createColumn({
           name: 'formulatext',
           summary: 'MAX',
           formula: "CASE WHEN {custcol_bc_tm_source_transaction.appliedtotransaction} LIKE 'Purchase Order%' THEN TRIM(REPLACE({custcol_bc_tm_source_transaction.appliedtotransaction}, 'Purchase Order', '')) ELSE {custcol_bc_tm_source_transaction.tranid} END"
         }),
-        search.createColumn({ name: 'custcol_bc_tm_line_id', summary: 'GROUP' }),
-        search.createColumn({ name: 'amount', summary: 'MAX' }),
-        search.createColumn({ name: 'expensecategory', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' })
+        search.createColumn({
+          name: 'custcol_bc_tm_line_id',
+          summary: 'GROUP'
+        }),
+        search.createColumn({
+          name: 'amount',
+          summary: 'MAX'
+        }),
+        search.createColumn({
+          name: 'expensecategory',
+          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
+          summary: 'GROUP'
+        })
       ]
     });
 
     var tranFinalArray = {};
 
     transactionSearch.run().each(function (result) {
+      
       var invoicingCategory = result.getText({
         name: 'custcol_invoicing_category',
         summary: 'GROUP'
@@ -739,8 +847,6 @@ define([
   // EXCEL HTML
   // --------------------------------------------------------------------------
   function buildExcelHtml(invoiceData, timesheetDataByTran) {
-    var rowCtx = { row: 1 };
-
     var html = ''
       + '<html xmlns:x="urn:schemas-microsoft-com:office:excel">'
       + '<head>'
@@ -758,25 +864,22 @@ define([
       + '</head>'
       + '<body>';
 
+    // Consolidated draft invoice
     html += '<div id="sheet1">';
-
-    html += buildInvoiceExcelBlock(invoiceData, rowCtx);
-
+    html += invoiceData.invoiceBlockHtml;
     html += '<br/><br/>';
 
     html += '<table style="width:100%; border-collapse:collapse;">'
       + '<tr><td colspan="20" style="background-color:#000; height:8px;"></td></tr>'
-      + '</table>';
-    rowCtx.row += 1;
+      + '</table>'
+      + '<br/><br/>';
 
-    html += '<br/><br/>';
-
+    // Timesheet blocks by tranid
     for (var i = 0; i < timesheetDataByTran.length; i++) {
-      html += buildTimesheetHtmlBlock(timesheetDataByTran[i], rowCtx);
+      html += buildTimesheetHtmlBlock(timesheetDataByTran[i]);
 
       if (i !== timesheetDataByTran.length - 1) {
         html += '<br/><br/><br/><table style="width:100%; border-collapse:collapse;"><tr><td colspan="20" style="background-color:#000; height:8px;"></td></tr></table><br/><br/><br/>';
-        rowCtx.row += 1;
       }
     }
 
@@ -784,135 +887,43 @@ define([
     return html;
   }
 
-  function buildInvoiceExcelBlock(invoiceData, rowCtx) {
-    var html = '';
-
-    html += ''
-      + '<table style="width:100%; border-collapse:collapse; font-family:Arial; border:1px solid #000; border-bottom:0px solid #000;">'
-      + '<tr>'
-      + '<td colspan="11" rowspan="7" style="font-size:30pt; vertical-align:middle; font-weight:bold; border:none;">DRAFT INVOICE</td>'
-      + '<td colspan="5" rowspan="7" align="right" style="vertical-align:middle; font-weight:bold; border:none;"><img src="' + invoiceData.logoUrl + '" height="100" /></td>'
-      + '</tr>'
-      + '</table>';
-    rowCtx.row += 1;
-
-    html += ''
-      + '<table style="width:100%; border-collapse:collapse; font-family:Arial; font-size:10pt; border:1px solid #000; border-top:0px solid #000;">';
-
-    html += ''
-      + '<tr>'
-      + '<td colspan="5" rowspan="4" valign="top" style="border:none;"><b>ATTN:</b><br/>' + invoiceData.billAddrHtml + '</td>'
-      + '<td colspan="6" valign="top" style="border:none;"><b>Invoice Date:</b><br/>' + invoiceData.soDate + '</td>'
-      + '<td colspan="5" rowspan="4" align="right" valign="top" style="border:none;">' + invoiceData.subAddrHtml + '<br/><b>ABN:</b> ' + invoiceData.subABN + '</td>'
-      + '</tr>';
-    rowCtx.row += 1;
-
-    html += '<tr><td colspan="6" valign="top" style="border:none;"><b>Invoice Number:</b><br/>DRAFT</td></tr>';
-    rowCtx.row += 1;
-
-    html += '<tr><td colspan="6" valign="top" style="border:none;"><b>PO Number:</b><br/>' + esc(invoiceData.poNumbers.join(', ')) + '</td></tr>';
-    rowCtx.row += 1;
-
-    html += '<tr><td colspan="6" valign="top" style="border:none;"><b>Customer Reference:</b><br/>' + esc(invoiceData.projectRefs.join(', ')) + '</td></tr>';
-    rowCtx.row += 1;
-
-    html += '<tr><td colspan="16" style="border:none;">&nbsp;</td></tr>';
-    rowCtx.row += 1;
-
-    html += '<tr><td colspan="16" style="border:none;"><b>Memo:</b><br/>' + esc(invoiceData.memos.join(' | ')) + '</td></tr>';
-    rowCtx.row += 1;
-
-    html += '<tr><td colspan="16" style="border:none;">&nbsp;</td></tr>';
-    rowCtx.row += 1;
-
-    html += ''
-      + '<tr>'
-      + '<th colspan="8" align="left" style="border-top:0px; border-right:0px; border-bottom:1px;"><b>Description</b></th>'
-      + '<th colspan="2" align="right" style="border-top:0px; border-right:0px; border-left:0px; border-bottom:1px;"><b>Price</b></th>'
-      + '<th colspan="2" align="center" style="border-top:0px; border-right:0px; border-left:0px; border-bottom:1px;"><b>' + (invoiceData.isAmericas ? 'TAX' : 'GST') + '</b></th>'
-      + '<th colspan="2" align="right" style="border-top:0px; border-right:0px; border-left:0px; border-bottom:1px;"><b>' + invoiceData.TAX_LABEL_AMT + '</b></th>'
-      + '<th colspan="2" align="right" style="border-top:0px; border-left:0px; border-bottom:1px;"><b>Amount ' + invoiceData.currencyText + '</b></th>'
-      + '</tr>';
-    rowCtx.row += 1;
-
-    var categories = Object.keys(invoiceData.catMap || {}).sort();
-    var detailStartRow = rowCtx.row;
-
-    for (var i = 0; i < categories.length; i++) {
-      var cat = categories[i];
-      var amt = parseFloat(invoiceData.catMap[cat].amountSum || 0) || 0;
-      var txa = Math.abs(parseFloat(invoiceData.catMap[cat].taxAmtSum || 0) || 0);
-      var txr = parseFloat(invoiceData.catMap[cat].taxRateMax || 0) || 0;
-      var currentRow = rowCtx.row;
-
-      html += ''
-        + '<tr>'
-        + '<td colspan="8" style="border-right:0px; border-top:0px; border-bottom:1px solid #C9C9C9;">' + esc(cat) + '</td>'
-        + '<td colspan="2" align="right" style="border-right:0px; border-top:0px; border-left:0px; border-bottom:1px solid #C9C9C9; mso-number-format:\\0022$\\0022#,##0.00;">' + amt.toFixed(2) + '</td>'
-        + '<td colspan="2" align="center" style="border-right:0px; border-top:0px; border-left:0px; border-bottom:1px solid #C9C9C9;">' + txr.toFixed(2) + '%</td>'
-        + '<td colspan="2" align="right" style="border-right:0px; border-top:0px; border-left:0px; border-bottom:1px solid #C9C9C9; mso-number-format:\\0022$\\0022#,##0.00;">' + txa.toFixed(2) + '</td>'
-        + '<td colspan="2" align="right" style="border-left:0px; border-top:0px; border-bottom:1px solid #C9C9C9; mso-number-format:\\0022$\\0022#,##0.00;">=I' + currentRow + '+M' + currentRow + '</td>'
-        + '</tr>';
-
-      rowCtx.row += 1;
-    }
-
-    var detailEndRow = rowCtx.row - 1;
-
-    html += '<tr><td colspan="10" style="border:none;">&nbsp;</td></tr>';
-    rowCtx.row += 1;
-
-    var subtotalRow = rowCtx.row;
-    html += ''
-      + '<tr>'
-      + '<td rowspan="3" colspan="12" style="border:none;"></td>'
-      + '<td colspan="2" align="right" style="border:none;">Subtotal</td>'
-      + '<td colspan="2" align="right" style="border:none; mso-number-format:\\0022$\\0022#,##0.00;">=SUM(I' + detailStartRow + ':I' + detailEndRow + ')</td>'
-      + '</tr>';
-    rowCtx.row += 1;
-
-    var gstTotalRow = rowCtx.row;
-    html += ''
-      + '<tr>'
-      + '<td colspan="2" align="right" style="border:none;">' + invoiceData.TAX_LABEL_TOTAL + '</td>'
-      + '<td colspan="2" align="right" style="border:none; mso-number-format:\\0022$\\0022#,##0.00;">=SUM(M' + detailStartRow + ':M' + detailEndRow + ')</td>'
-      + '</tr>';
-    rowCtx.row += 1;
-
-    var totalAudRow = rowCtx.row;
-    html += ''
-      + '<tr>'
-      + '<td colspan="2" align="right" style="border-top:1px; border-left:0px; border-right:0px; border-bottom:0px;"><b>TOTAL ' + invoiceData.currencyText + '</b></td>'
-      + '<td colspan="2" align="right" style="border-top:1px; border-right:0px; border-left:0px; border-bottom:0px; mso-number-format:\\0022$\\0022#,##0.00;"><b>=P' + subtotalRow + '+P' + gstTotalRow + '</b></td>'
-      + '</tr>';
-    rowCtx.row += 1;
-
-    html += '<tr><td colspan="16" style="border:none;">&nbsp;</td></tr>';
-    rowCtx.row += 1;
-
-    html += ''
-      + '<tr>'
-      + '<td colspan="16" style="border:none;">'
-      + '<b>Sales Orders:</b> ' + esc(invoiceData.soNumbers.join(', ')) + '<br/><br/>'
-      + '<b>Customer:</b> ' + esc(invoiceData.customerNames.join(', ')) + '<br/><br/>'
-      + '<b>Due Date:</b> ' + invoiceData.dueDate + '<br/><br/>'
-      + '<b>Payment Terms:</b> ' + invoiceData.terms + '<br/><br/>'
-      + 'Please email remittance advice to ' + invoiceData.remitEmail + '<br/><br/>'
-      + '<b>BANK ACCOUNT DETAILS</b><br/>'
-      + 'Account Name: ' + invoiceData.acctName + '<br/>'
-      + 'Bank: ' + invoiceData.bankName + '<br/>'
-      + 'BSB: ' + invoiceData.bsb + '<br/>'
-      + 'Account: ' + invoiceData.acctNum
-      + '</td>'
-      + '</tr>';
-    rowCtx.row += 1;
-
-    html += '</table>';
-
-    return html;
-  }
-
-  function buildTimesheetHtmlBlock(ts, rowCtx) {
+  // ==========================================================================
+  // MODIFIED: buildTimesheetHtmlBlock now outputs x:fmla attributes for:
+  //   - Labour: Total Week (SUM of day columns), Claim Amount (Total Week * Rate),
+  //             TOTAL row (SUM per day column, SUM of Total Week, SUM of Claim Amount)
+  //   - Expenses: TOTAL row Cost & Amount (SUM formulas)
+  //   - Materials: TOTAL row Cost & Amount (SUM formulas)
+  //
+  // COLUMN MAPPING FOR LABOUR TABLE (with colspans):
+  //   A,B (colspan 2) = Name
+  //   C,D (colspan 2) = Role
+  //   E              = Time Type
+  //   F              = Shift Type
+  //   G,H,I,J,K,L,M = Day columns (up to 7 days, varies)
+  //   Next col after days = Total Week
+  //   Next col         = Rate
+  //   Next col         = Claim Amount
+  //   Remaining        = Notes
+  //
+  // The header rows (Labour title + column headers + date sub-headers) = 3 rows.
+  // Data rows start at Excel row 4 within this table.
+  //
+  // COLUMN MAPPING FOR EXPENSES TABLE:
+  //   A-E (colspan 5) = Expense Category
+  //   F,G (colspan 2) = PO #
+  //   H-O (colspan 8) = Description
+  //   P              = Total Cost excl. Tax
+  //   Q              = Cost + Mark up
+  //
+  // COLUMN MAPPING FOR MATERIALS TABLE:
+  //   A,B (colspan 2) = Supplier Invoice #
+  //   C,D,E (colspan 3) = Supplier
+  //   F,G (colspan 2) = PO #
+  //   H-O (colspan 8) = Description
+  //   P              = Total Cost excl. Tax
+  //   Q              = Cost + Mark up
+  // ==========================================================================
+  function buildTimesheetHtmlBlock(ts) {
     var x = ts.groupedData || {};
     var h = ts.headerInfo || {};
     var labelLabor = ts.replaceLabor ? 'Labour' : 'Labor';
@@ -929,7 +940,6 @@ define([
       + '</tr>'
       + '</table>'
       + '<br/><br/><br/>';
-    rowCtx.row += 1;
 
     html += ''
       + '<table style="width:100%; border-collapse:collapse; font-size:9pt; table-layout:fixed; margin-top:10px;">'
@@ -937,7 +947,7 @@ define([
       + '<td colspan="2" style="width:49%; vertical-align:top;">'
       + '<table style="width:100%; border-collapse:collapse;">'
       + '<tr><td class="info-header" colspan="2">Client:</td><td style="border:1px solid #000;" colspan="4">' + esc(h.client) + '</td></tr>'
-      + '<tr><td class="info-header" colspan="2">Customer Ref #:</td><td style="border:1px solid #000;" colspan="4">' + esc(h.customerRef) + '</td></tr>'
+      + '<tr><td class="info-header" colspan="2">Customer Ref #:</td><td style="border:1px solid #000; " colspan="4">' + esc(h.customerRef) + '</td></tr>'
       + '<tr><td class="info-header" colspan="2">Week-Ending:</td><td style="border:1px solid #000; mso-number-format:\\@;" colspan="4">' + formatDateMMDDYYYY(h.weekEnding) + '</td></tr>'
       + '<tr><td class="info-header" colspan="2">C2O Project Manager:</td><td style="border:1px solid #000;" colspan="4">' + esc(h.projectManager) + '</td></tr>'
       + '<tr><td class="info-header" colspan="2">Description of Work:</td><td style="border:1px solid #000;" colspan="4">' + esc(h.description) + '</td></tr>'
@@ -959,51 +969,95 @@ define([
       + '</tr>'
       + '</table>'
       + '<br/><br/><br/>';
-    rowCtx.row += 1;
 
+    log.debug('LaborMap', x.Labor || x.Labour)
     if (x.Labor || x.Labour) {
       var labor = x.Labor || x.Labour;
-      var dayStartCol = 7;
-      var dayEndCol = dayStartCol + labor[0].days.length - 1;
-      var totalWeekCol = dayEndCol + 1;
-      var rateCol = totalWeekCol + 1;
-      var claimAmtCol = rateCol + 1;
+      var numDays = labor[0].days.length;
+
+      // =====================================================================
+      // LABOUR TABLE COLUMN MAPPING (Excel columns):
+      //   A,B = Name (colspan 2)
+      //   C,D = Role (colspan 2)
+      //   E   = Time Type
+      //   F   = Shift Type
+      //   G.. = Day columns (numDays columns starting at G)
+      //
+      //   After days:
+      //     dayEndCol + 1 = Total Week
+      //     dayEndCol + 2 = Rate
+      //     dayEndCol + 3 = Claim Amount
+      //
+      //   Excel column letters:
+      //     Day cols: G=6, H=7, I=8, J=9, K=10, L=11, M=12
+      //     For 7 days: G through M
+      //     Total Week col = 6 + numDays = col index (0-based)
+      //     Rate col = 6 + numDays + 1
+      //     Claim Amount col = 6 + numDays + 2
+      //
+      //   Row layout within this <table>:
+      //     Row 1 = "Labour" header row
+      //     Row 2 = Column headers (Name, Role, etc.)
+      //     Row 3 = Date sub-headers
+      //     Row 4 onwards = Data rows
+      //     Last row = TOTAL row
+      // =====================================================================
+
+      var dayStartColIdx = 6;  // G = index 6
+      var dayEndColIdx = dayStartColIdx + numDays - 1;
+      var totalWeekColIdx = dayStartColIdx + numDays;
+      var rateColIdx = totalWeekColIdx + 1;
+      var claimAmtColIdx = rateColIdx + 1;
+
+      var dayStartColLetter = colLetter(dayStartColIdx);
+      var dayEndColLetter = colLetter(dayEndColIdx);
+      var totalWeekColLetter = colLetter(totalWeekColIdx);
+      var rateColLetter = colLetter(rateColIdx);
+      var claimAmtColLetter = colLetter(claimAmtColIdx);
+
+      // Header rows = 3 (title, column names, date sub-row)
+      var laborHeaderRows = 3;
+      var firstDataExcelRow = laborHeaderRows + 1; // row 4
+      var dataRowCount = labor.length - 2; // exclude header[0] and total[last]
+      var lastDataExcelRow = firstDataExcelRow + dataRowCount - 1;
+      var totalExcelRow = lastDataExcelRow + 1;
 
       html += '<table>'
         + '<tr>'
         + '<th class="table-header" colspan="6">' + labelLabor + '</th>'
         + '<td colspan="15" align="center" style="border-top:1px solid #000; border-bottom:1px solid #000; border-left:1px solid #000; border-right:1px solid #000;">ALL HOURS SHOWN ARE HOURS WORKED</td>'
-        + '</tr>';
-      rowCtx.row += 1;
-
-      html += '<tr>'
+        + '</tr>'
+        + '<tr>'
         + '<th class="table-header" colspan="2" rowspan="2">Name</th>'
         + '<th class="table-header" colspan="2" rowspan="2">Role</th>'
         + '<th class="table-header" rowspan="2">Time Type</th>'
         + '<th class="table-header" rowspan="2">Shift Type</th>';
 
-      for (var i1 = 0; i1 < labor[0].days.length; i1++) {
+      for (var i1 = 0; i1 < numDays; i1++) {
         html += '<th class="table-header">' + getDayName(labor[0].days[i1].date) + '</th>';
       }
 
       html += '<th class="table-header" rowspan="2">Total Week</th>'
         + '<th class="table-header" rowspan="2">Rate</th>'
         + '<th class="table-header" rowspan="2">Claim Amount</th>'
-        + '<th class="table-header" rowspan="2" colspan="' + (12 - labor[0].days.length) + '">Notes</th>'
-        + '</tr>';
-      rowCtx.row += 1;
+        + '<th class="table-header" rowspan="2" colspan="' + (12 - numDays) + '">Notes</th>'
+        + '</tr>'
+        + '<tr>';
 
-      html += '<tr>';
-      for (var i2 = 0; i2 < labor[0].days.length; i2++) {
+      for (var i2 = 0; i2 < numDays; i2++) {
         html += '<th class="table-header" style="mso-number-format:\\@;">' + formatDateMMDDYYYY(labor[0].days[i2].date) + '</th>';
       }
+
       html += '</tr>';
-      rowCtx.row += 1;
 
-      var laborDetailStartRow = rowCtx.row;
-
+      // Data rows (index 1 to length-2, skipping header[0] and total[last])
       for (var q = 1; q < labor.length - 1; q++) {
-        var currentRow = rowCtx.row;
+        var excelRow = laborHeaderRows + q; // q=1 -> row 4, q=2 -> row 5, etc.
+
+        // Total Week formula: =SUM(G{row}:{dayEndCol}{row})
+        var fmlaTotalWeek = '=SUM(' + dayStartColLetter + excelRow + ':' + dayEndColLetter + excelRow + ')';
+        // Claim Amount formula: =totalWeekCol * rateCol
+        var fmlaClaimAmt = '=' + totalWeekColLetter + excelRow + '*' + rateColLetter + excelRow;
 
         html += '<tr>'
           + '<td colspan="2">' + labor[q].employee + '</td>'
@@ -1015,36 +1069,37 @@ define([
           html += '<td>' + labor[q].days[w].hours + '</td>';
         }
 
-        html += '<td style="mso-number-format:0.0;">=SUM(' + colLetter(dayStartCol) + currentRow + ':' + colLetter(dayEndCol) + currentRow + ')</td>'
-          + '<td style="mso-number-format:\\0022$\\0022#,##0.00;">' + parseFloat(labor[q].rate || 0).toFixed(2) + '</td>'
-          + '<td style="mso-number-format:\\0022$\\0022#,##0.00;">=ROUND(' + colLetter(totalWeekCol) + currentRow + '*' + colLetter(rateCol) + currentRow + ',2)</td>'
-          + '<td colspan="' + (12 - labor[q].days.length) + '">' + (labor[q].notes || '') + '</td>'
+        html += '<td x:fmla="' + fmlaTotalWeek + '">' + labor[q].totalWeek + '</td>'
+          + '<td>' + formatCurrency(labor[q].rate) + '</td>'
+          + '<td x:fmla="' + fmlaClaimAmt + '">' + formatCurrency(labor[q].amt) + '</td>'
+          + '<td colspan="' + (12 - numDays) + '"></td>'
           + '</tr>';
-
-        rowCtx.row += 1;
       }
 
-      var laborDetailEndRow = rowCtx.row - 1;
-
+      // TOTAL row (last element)
       if (labor.length > 1) {
-        var totalRowNum = rowCtx.row;
         var last = labor[labor.length - 1];
 
         html += '<tr>'
           + '<td colspan="5" style="border-left: 0; border-bottom: 0;"></td>'
           + '<td class="table-header"><b>' + last.employee + '</b></td>';
 
-        for (var ww = 0; ww < last.days.length; ww++) {
-          var sumCol = dayStartCol + ww;
-          html += '<td class="table-header"><b>=SUM(' + colLetter(sumCol) + laborDetailStartRow + ':' + colLetter(sumCol) + laborDetailEndRow + ')</b></td>';
+        // Each day column total: =SUM(col{firstData}:col{lastData})
+        for (var w2 = 0; w2 < last.days.length; w2++) {
+          var dayColLetter = colLetter(dayStartColIdx + w2);
+          var fmlaDayTotal = '=SUM(' + dayColLetter + firstDataExcelRow + ':' + dayColLetter + lastDataExcelRow + ')';
+          html += '<td class="table-header" x:fmla="' + fmlaDayTotal + '"><b>' + last.days[w2].hours + '</b></td>';
         }
 
-        html += '<td class="table-header"><b>=SUM(' + colLetter(totalWeekCol) + laborDetailStartRow + ':' + colLetter(totalWeekCol) + laborDetailEndRow + ')</b></td>'
-          + '<td class="table-header"><b></b></td>'
-          + '<td class="table-header"><b>=SUM(' + colLetter(claimAmtCol) + laborDetailStartRow + ':' + colLetter(claimAmtCol) + laborDetailEndRow + ')</b></td>'
-          + '</tr>';
+        // Total Week total: =SUM(totalWeekCol{firstData}:totalWeekCol{lastData})
+        var fmlaTotalWeekSum = '=SUM(' + totalWeekColLetter + firstDataExcelRow + ':' + totalWeekColLetter + lastDataExcelRow + ')';
+        // Claim Amount total: =SUM(claimAmtCol{firstData}:claimAmtCol{lastData})
+        var fmlaClaimAmtSum = '=SUM(' + claimAmtColLetter + firstDataExcelRow + ':' + claimAmtColLetter + lastDataExcelRow + ')';
 
-        rowCtx.row += 1;
+        html += '<td class="table-header" x:fmla="' + fmlaTotalWeekSum + '"><b>' + last.totalWeek + '</b></td>'
+          + '<td class="table-header"><b>' + formatCurrency(last.rate) + '</b></td>'
+          + '<td class="table-header" x:fmla="' + fmlaClaimAmtSum + '"><b>' + formatCurrency(last.amt) + '</b></td>'
+          + '</tr>';
       }
 
       html += '</table>';
@@ -1052,15 +1107,10 @@ define([
 
     if (x['Equipment / Vehicle Rental']) {
       var equp = x['Equipment / Vehicle Rental'];
-      var equDayStartCol = 5;
-      var equDayEndCol = equDayStartCol + equp[0].days.length - 1;
-      var equTotalWeekCol = equDayEndCol + 1;
 
       html += '<br/><br/><br/><table>'
-        + '<tr><th colspan="8">Equipment / Vehicle Rental</th></tr>';
-      rowCtx.row += 1;
-
-      html += '<tr>'
+        + '<tr><th colspan="8">Equipment / Vehicle Rental</th></tr>'
+        + '<tr>'
         + '<th colspan="4" rowspan="2">Role</th>';
 
       for (var e1 = 0; e1 < equp[0].days.length; e1++) {
@@ -1069,46 +1119,55 @@ define([
 
       html += '<th rowspan="2">Total Week</th>'
         + '<th rowspan="2" colspan="' + (14 - equp[0].days.length) + '">Notes</th>'
-        + '</tr>';
-      rowCtx.row += 1;
+        + '</tr>'
+        + '<tr>';
 
-      html += '<tr>';
       for (var e2 = 0; e2 < equp[0].days.length; e2++) {
         html += '<th style="mso-number-format:\\@;">' + formatDateMMDDYYYY(equp[0].days[e2].date) + '</th>';
       }
+
       html += '</tr>';
-      rowCtx.row += 1;
 
       for (var r = 1; r < equp.length; r++) {
-        var equRow = rowCtx.row;
-        var isEquTotal = (r === equp.length - 1 && String(equp[r].employee || '').toUpperCase() === 'TOTAL');
-
         html += '<tr><td colspan="4">' + equp[r].role + '</td>';
         for (var t = 0; t < equp[r].days.length; t++) {
           html += '<td>' + equp[r].days[t].hours + '</td>';
         }
-
-        if (isEquTotal) {
-          html += '<td>' + equp[r].totalWeek + '</td>';
-        } else {
-          html += '<td style="mso-number-format:0.0;">=SUM(' + colLetter(equDayStartCol) + equRow + ':' + colLetter(equDayEndCol) + equRow + ')</td>';
-        }
-
-        html += '<td colspan="' + (14 - equp[r].days.length) + '"></td>'
+        html += '<td>' + equp[r].totalWeek + '</td>'
+          + '<td colspan="' + (14 - equp[r].days.length) + '"></td>'
           + '</tr>';
-
-        rowCtx.row += 1;
       }
 
       html += '</table>';
     }
 
+    // =====================================================================
+    // MATERIALS TABLE with formulas
+    // Column mapping:
+    //   A,B (colspan 2) = Supplier Invoice #
+    //   C,D,E (colspan 3) = Supplier
+    //   F,G (colspan 2) = PO #
+    //   H-O (colspan 8) = Description
+    //   P = Total Cost excl. Tax
+    //   Q = Cost + Mark up
+    //
+    // Rows: Row 1 = title, Row 2 = headers, Row 3+ = data, last = TOTAL
+    // =====================================================================
     if (x.Materials) {
-      html += '<br/><br/><br/><table>'
-        + '<tr><th class="table-header" colspan="5">Materials</th></tr>';
-      rowCtx.row += 1;
+      var matRows = x.Materials;
+      var matHeaderRows = 2; // title row + header row
+      var matFirstDataRow = matHeaderRows + 1;
+      var matDataCount = 0;
 
-      html += '<tr>'
+      // Count data rows (non-TOTAL)
+      for (var mp = 0; mp < matRows.length; mp++) {
+        if (matRows[mp].documentNumber !== 'TOTAL') matDataCount++;
+      }
+      var matLastDataRow = matFirstDataRow + matDataCount - 1;
+
+      html += '<br/><br/><br/><table>'
+        + '<tr><th class="table-header" colspan="5">Materials</th></tr>'
+        + '<tr>'
         + '<th class="table-header" colspan="2">Supplier Invoice #</th>'
         + '<th class="table-header" colspan="3">Supplier</th>'
         + '<th class="table-header" colspan="2">PO #</th>'
@@ -1116,22 +1175,19 @@ define([
         + '<th class="table-header">Total Cost excl. Tax</th>'
         + '<th class="table-header">Cost + Mark up</th>'
         + '</tr>';
-      rowCtx.row += 1;
 
-      var matCostCol = 16;
-      var matAmtCol = 17;
-      var matStartRow = rowCtx.row;
-
-      for (var p = 0; p < x.Materials.length; p++) {
-        var m = x.Materials[p];
-        var matRow = rowCtx.row;
-
+      for (var p = 0; p < matRows.length; p++) {
+        var m = matRows[p];
         if (m.documentNumber === 'TOTAL') {
+          // P = col index 15 = "P", Q = col index 16 = "Q"
+          var fmlaTotalCost = '=SUM(P' + matFirstDataRow + ':P' + matLastDataRow + ')';
+          var fmlaTotalMarkup = '=SUM(Q' + matFirstDataRow + ':Q' + matLastDataRow + ')';
+
           html += '<tr>'
             + '<td colspan="13" style="border:0px solid #000;"></td>'
             + '<td colspan="2" align="right" style="background-color:#3a4b87; color:white; font-weight:bold;">Total</td>'
-            + '<td align="right" style="mso-number-format:\\0022$\\0022#,##0.00; background-color:#3a4b87; color:white; font-weight:bold;">=SUM(' + colLetter(matCostCol) + matStartRow + ':' + colLetter(matCostCol) + (matRow - 1) + ')</td>'
-            + '<td align="right" style="mso-number-format:\\0022$\\0022#,##0.00; font-weight:bold;">=SUM(' + colLetter(matAmtCol) + matStartRow + ':' + colLetter(matAmtCol) + (matRow - 1) + ')</td>'
+            + '<td align="right" x:fmla="' + fmlaTotalCost + '"></td>'
+            + '<td align="right" style="font-weight:bold;" x:fmla="' + fmlaTotalMarkup + '">' + m.amount + '</td>'
             + '</tr>';
         } else {
           html += '<tr>'
@@ -1139,57 +1195,68 @@ define([
             + '<td colspan="3">' + m.mainName + '</td>'
             + '<td colspan="2">' + m.cleanedPO + '</td>'
             + '<td colspan="8">' + m.memo + '</td>'
-            + '<td align="right" style="mso-number-format:\\0022$\\0022#,##0.00;">' + parseFloat(m.cost || 0).toFixed(2) + '</td>'
-            + '<td align="right" style="mso-number-format:\\0022$\\0022#,##0.00;">' + parseFloat(m.amount || 0).toFixed(2) + '</td>'
+            + '<td align="right">' + m.cost + '</td>'
+            + '<td align="right">' + m.amount + '</td>'
             + '</tr>';
         }
-
-        rowCtx.row += 1;
       }
 
       html += '</table>';
     }
 
+    // =====================================================================
+    // EXPENSES TABLE with formulas
+    // Column mapping:
+    //   A-E (colspan 5) = Expense Category
+    //   F,G (colspan 2) = PO #
+    //   H-O (colspan 8) = Description
+    //   P = Total Cost excl. Tax
+    //   Q = Cost + Mark up
+    //
+    // Rows: Row 1 = title, Row 2 = headers, Row 3+ = data, last = TOTAL
+    // =====================================================================
     if (x.Expenses) {
-      html += '<br/><br/><br/><table>'
-        + '<tr><th class="table-header" colspan="5">Expenses</th></tr>';
-      rowCtx.row += 1;
+      var expRows = x.Expenses;
+      var expHeaderRows = 2;
+      var expFirstDataRow = expHeaderRows + 1;
+      var expDataCount = 0;
 
-      html += '<tr>'
+      for (var ea = 0; ea < expRows.length; ea++) {
+        if (expRows[ea].documentNumber !== 'TOTAL') expDataCount++;
+      }
+      var expLastDataRow = expFirstDataRow + expDataCount - 1;
+
+      html += '<br/><br/><br/><table>'
+        + '<tr><th class="table-header" colspan="5">Expenses</th></tr>'
+        + '<tr>'
         + '<th class="table-header" colspan="5">Expense Category</th>'
         + '<th class="table-header" colspan="2">PO #</th>'
         + '<th class="table-header" colspan="8">Description</th>'
         + '<th class="table-header">Total Cost excl. Tax</th>'
         + '<th class="table-header">Cost + Mark up</th>'
         + '</tr>';
-      rowCtx.row += 1;
 
-      var expCostCol = 16;
-      var expAmtCol = 17;
-      var expStartRow = rowCtx.row;
-
-      for (var a = 0; a < x.Expenses.length; a++) {
-        var e = x.Expenses[a];
-        var expRow = rowCtx.row;
-
+      for (var a = 0; a < expRows.length; a++) {
+        var e = expRows[a];
         if (e.documentNumber === 'TOTAL') {
+          var fmlaExpCost = '=SUM(P' + expFirstDataRow + ':P' + expLastDataRow + ')';
+          var fmlaExpMarkup = '=SUM(Q' + expFirstDataRow + ':Q' + expLastDataRow + ')';
+
           html += '<tr>'
             + '<td colspan="5" style="border:0px solid #000; background-color:#3a4b87; color:white; font-weight:bold;">Total</td>'
             + '<td colspan="10" align="right"></td>'
-            + '<td align="right" style="background-color:#3a4b87; color:white; font-weight:bold; mso-number-format:\\0022$\\0022#,##0.00;">=SUM(' + colLetter(expCostCol) + expStartRow + ':' + colLetter(expCostCol) + (expRow - 1) + ')</td>'
-            + '<td align="right" style="background-color:#3a4b87; color:white; font-weight:bold; mso-number-format:\\0022$\\0022#,##0.00;">=SUM(' + colLetter(expAmtCol) + expStartRow + ':' + colLetter(expAmtCol) + (expRow - 1) + ')</td>'
+            + '<td align="right" style="background-color:#3a4b87; color:white; font-weight:bold;" x:fmla="' + fmlaExpCost + '">' + e.cost + '</td>'
+            + '<td align="right" style="background-color:#3a4b87; color:white; font-weight:bold;" x:fmla="' + fmlaExpMarkup + '">' + e.amount + '</td>'
             + '</tr>';
         } else {
           html += '<tr>'
             + '<td colspan="5">' + e.expCat + '</td>'
             + '<td colspan="2">' + e.cleanedPO + '</td>'
             + '<td colspan="8">' + e.memo + '</td>'
-            + '<td align="right" style="mso-number-format:\\0022$\\0022#,##0.00;">' + parseFloat(e.cost || 0).toFixed(2) + '</td>'
-            + '<td align="right" style="mso-number-format:\\0022$\\0022#,##0.00;">' + parseFloat(e.amount || 0).toFixed(2) + '</td>'
+            + '<td align="right">' + e.cost + '</td>'
+            + '<td align="right">' + e.amount + '</td>'
             + '</tr>';
         }
-
-        rowCtx.row += 1;
       }
 
       html += '</table><br/><br/><br/><br/>';
@@ -1206,10 +1273,17 @@ define([
       }
 
       html += '</td></tr></table>';
-      rowCtx.row += 1;
     }
 
     return html;
+  }
+
+  // --------------------------------------------------------------------------
+  // HELPER: Convert 0-based column index to Excel column letter
+  // --------------------------------------------------------------------------
+  function colLetter(idx) {
+    if (idx < 26) return String.fromCharCode(65 + idx);
+    return String.fromCharCode(65 + Math.floor(idx / 26) - 1) + String.fromCharCode(65 + (idx % 26));
   }
 
   // --------------------------------------------------------------------------
@@ -1352,20 +1426,9 @@ define([
   }
 
   function formatCurrency(amount) {
-    if (amount === '' || amount == null) return '';
-    if (String(amount).indexOf('$') !== -1) return amount;
+    if (amount == '' || amount == null) return '';
+    if (String(amount).indexOf('$') != -1) return amount;
     return '$ ' + parseFloat(amount).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  }
-
-  function colLetter(colNum) {
-    var temp = '';
-    var letter = '';
-    while (colNum > 0) {
-      temp = (colNum - 1) % 26;
-      letter = String.fromCharCode(temp + 65) + letter;
-      colNum = (colNum - temp - 1) / 26;
-    }
-    return letter;
   }
 
   function getEmployeeList() {
@@ -1396,6 +1459,7 @@ define([
 
     dateStr = String(dateStr);
 
+    // Handle MM/DD/YYYY
     if (dateStr.indexOf('/') !== -1) {
       var parts = dateStr.split('/');
       if (parts.length === 3) {
@@ -1410,6 +1474,7 @@ define([
       }
     }
 
+    // Fallback
     var dt = new Date(dateStr);
     if (!isNaN(dt)) {
       var months2 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
