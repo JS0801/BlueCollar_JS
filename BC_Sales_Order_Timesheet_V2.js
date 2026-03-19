@@ -30,10 +30,8 @@ define([
 
       var empNameArr = getEmployeeList();
 
-      // 1) Consolidated draft invoice data for ALL tranids together
       var invoiceData = buildConsolidatedInvoiceData(tranIds);
 
-      // 2) Timesheet data PER tranid
       var timesheetDataByTran = [];
       for (var i = 0; i < tranIds.length; i++) {
         timesheetDataByTran.push(buildTimesheetData(tranIds[i], empNameArr));
@@ -155,7 +153,6 @@ define([
       if (customerNames.indexOf(entityText) === -1 && entityText) customerNames.push(entityText);
       if (memos.indexOf(memo) === -1 && memo) memos.push(memo);
 
-      // detect AU from this SO subsidiary if needed
       try {
         var currentSubId = so.getValue({ fieldId: 'subsidiary' });
         if (String(currentSubId) === String(subId)) {
@@ -220,124 +217,64 @@ define([
 
     var grandTotal = subTotalExTax + Math.abs(totalTax);
 
-    // var invoiceBlockHtml = ''
-    //   + '<table style="width:100%; border-collapse:collapse; font-family:Arial; border:1px solid #000;">'
-    //   + '<tr>'
-    //   + '<td colspan="12" rowspan="7" style="font-size:30pt; vertical-align:middle; font-weight:bold;">DRAFT INVOICE</td>'
-    //   + '<td colspan="4" rowspan="7" align="right" style="vertical-align:middle; font-weight:bold;"><img src="' + logoUrl + '" height="100" /></td>'
-    //   + '</tr>'
-    //   + '</table>'
-
-    //   + '<table style="width:100%; border-collapse:collapse; font-family:Arial; font-size:10pt; border:1px solid #000;">'
-    //   + '<tr>'
-    //   + '<td colspan="5" rowspan="4" valign="top">'
-    //   + '<b>ATTN:</b><br/>'
-    //   + billAddrHtml
-    //   + '</td>'
-    //   + '<td colspan="6" valign="top"><b>Invoice Date:</b><br/>' + soDate + '</td>'
-    //   + '<td colspan="5" rowspan="4" align="right" valign="top">'
-    //   + subAddrHtml + '<br/>'
-    //   + '<b>ABN:</b> ' + subABN
-    //   + '</td>'
-    //   + '</tr>'
-
-    //   + '<tr><td colspan="6" valign="top"><b>Invoice Number:</b><br/>DRAFT</td></tr>'
-    //   + '<tr><td colspan="6" valign="top"><b>PO Number:</b><br/>' + esc(poNumbers.join(', ')) + '</td></tr>'
-    //   + '<tr><td colspan="6" valign="top"><b>Customer Reference:</b><br/>' + esc(projectRefs.join(', ')) + '</td></tr>'
-
-    //   + '<tr><td colspan="16">&nbsp;</td></tr>'
-    //   + '<tr><td colspan="16"><b>Memo:</b><br/>' + esc(memos.join(' | ')) + '</td></tr>'
-    //   + '<tr><td colspan="16">&nbsp;</td></tr>'
-
-    //   + '<tr style="border-bottom:1px solid #000;">'
-    //   + '<th class="table-header" colspan="8"><b>Description</b></th>'
-    //   + '<th class="table-header" colspan="2" align="right"><b>Price</b></th>'
-    //   + '<th class="table-header" colspan="2" align="center"><b>' + (isAmericas ? 'TAX' : 'GST') + '</b></th>'
-    //   + '<th class="table-header" colspan="2" align="right"><b>' + TAX_LABEL_AMT + '</b></th>'
-    //   + '<th class="table-header" colspan="2" align="right"><b>Amount ' + currencyText + '</b></th>'
-    //   + '</tr>'
-
-    //   + rowsHtml
-
-    //   + '<tr><td colspan="10">&nbsp;</td></tr>'
-    //   + '<tr><td rowspan = "3" colspan="12"></td><td colspan="2" align="right">Subtotal</td><td colspan="2" align="right">' + money(subTotalExTax) + '</td></tr>'
-    //   + '<tr><td colspan="2" align="right">' + TAX_LABEL_TOTAL + '</td><td colspan="2" align="right">' + money(Math.abs(totalTax)) + '</td></tr>'
-    //   + '<tr><td colspan="2" align="right" style="border-top:1px solid #000;"><b>TOTAL ' + currencyText + '</b></td><td colspan="2" align="right" style="border-top:1px solid #000;"><b>' + money(grandTotal) + '</b></td></tr>'
-
-    //   + '<tr><td colspan="16">&nbsp;</td></tr>'
-    //   + '<tr><td colspan="16">'
-    //   + '<b>Sales Orders:</b> ' + esc(soNumbers.join(', ')) + '<br/><br/>'
-    //   + '<b>Customer:</b> ' + esc(customerNames.join(', ')) + '<br/><br/>'
-    //   + '<b>Due Date:</b> ' + dueDate + '<br/><br/>'
-    //   + '<b>Payment Terms:</b> ' + terms + '<br/><br/>'
-    //   + 'Please email remittance advice to ' + remitEmail + '<br/><br/>'
-    //   + '<b>BANK ACCOUNT DETAILS</b><br/>'
-    //   + 'Account Name: ' + acctName + '<br/>'
-    //   + 'Bank: ' + bankName + '<br/>'
-    //   + 'BSB: ' + bsb + '<br/>'
-    //   + 'Account: ' + acctNum
-    //   + '</td></tr>'
-    //   + '</table>';
-
-
     var invoiceBlockHtml = ''
-  + '<table style="width:100%; border-collapse:collapse; font-family:Arial; border:1px solid #000; border-bottom:0px solid #000;">'
-  + '<tr>'
-  + '<td colspan="11" rowspan="7" style="font-size:30pt; vertical-align:middle; font-weight:bold; border:none;">DRAFT INVOICE</td>'
-  + '<td colspan="5" rowspan="7" align="right" style="vertical-align:middle; font-weight:bold; border:none;"><img src="' + logoUrl + '" height="100" /></td>'
-  + '</tr>'
-  + '</table>'
+      + '<table style="width:100%; border-collapse:collapse; font-family:Arial; border:1px solid #000; border-bottom:0px solid #000;">'
+      + '<tr>'
+      + '<td colspan="11" rowspan="7" style="font-size:30pt; vertical-align:middle; font-weight:bold; border:none;">DRAFT INVOICE</td>'
+      + '<td colspan="5" rowspan="7" align="right" style="vertical-align:middle; font-weight:bold; border:none;"><img src="' + logoUrl + '" height="100" /></td>'
+      + '</tr>'
+      + '</table>'
 
-  + '<table style="width:100%; border-collapse:collapse; font-family:Arial; font-size:10pt; border:1px solid #000; border-top:0px solid #000;">'
-  + '<tr>'
-  + '<td colspan="5" rowspan="4" valign="top" style="border:none;">'
-  + '<b>ATTN:</b><br/>'
-  + billAddrHtml
-  + '</td>'
-  + '<td colspan="6" valign="top" style="border:none;"><b>Invoice Date:</b><br/>' + soDate + '</td>'
-  + '<td colspan="5" rowspan="4" align="right" valign="top" style="border:none;">'
-  + subAddrHtml + '<br/>'
-  + '<b>ABN:</b> ' + subABN
-  + '</td>'
-  + '</tr>'
+      + '<table style="width:100%; border-collapse:collapse; font-family:Arial; font-size:10pt; border:1px solid #000; border-top:0px solid #000;">'
+      + '<tr>'
+      + '<td colspan="5" rowspan="4" valign="top" style="border:none;">'
+      + '<b>ATTN:</b><br/>'
+      + billAddrHtml
+      + '</td>'
+      + '<td colspan="6" valign="top" style="border:none;"><b>Invoice Date:</b><br/>' + soDate + '</td>'
+      + '<td colspan="5" rowspan="4" align="right" valign="top" style="border:none;">'
+      + subAddrHtml + '<br/>'
+      + '<b>ABN:</b> ' + subABN
+      + '</td>'
+      + '</tr>'
 
-  + '<tr><td colspan="6" valign="top" style="border:none;"><b>Invoice Number:</b><br/>DRAFT</td></tr>'
-  + '<tr><td colspan="6" valign="top" style="border:none;"><b>PO Number:</b><br/>' + esc(poNumbers.join(', ')) + '</td></tr>'
-  + '<tr><td colspan="6" valign="top" style="border:none;"><b>Customer Reference:</b><br/>' + esc(projectRefs.join(', ')) + '</td></tr>'
+      + '<tr><td colspan="6" valign="top" style="border:none;"><b>Invoice Number:</b><br/>DRAFT</td></tr>'
+      + '<tr><td colspan="6" valign="top" style="border:none;"><b>PO Number:</b><br/>' + esc(poNumbers.join(', ')) + '</td></tr>'
+      + '<tr><td colspan="6" valign="top" style="border:none;"><b>Customer Reference:</b><br/>' + esc(projectRefs.join(', ')) + '</td></tr>'
 
-  + '<tr><td colspan="16" style="border:none;">&nbsp;</td></tr>'
-  + '<tr><td colspan="16" style="border:none;"><b>Memo:</b><br/>' + esc(memos.join(' | ')) + '</td></tr>'
-  + '<tr><td colspan="16" style="border:none;">&nbsp;</td></tr>'
+      + '<tr><td colspan="16" style="border:none;">&nbsp;</td></tr>'
+      + '<tr><td colspan="16" style="border:none;"><b>Memo:</b><br/>' + esc(memos.join(' | ')) + '</td></tr>'
+      + '<tr><td colspan="16" style="border:none;">&nbsp;</td></tr>'
 
-  + '<tr>'
-  + '<th  colspan="8" align="left"   style="border-top:0px; border-right:0px; border-bottom: 1px;"><b>Description</b></th>'
-  + '<th  colspan="2" align="right"  style="border-top:0px; border-right:0px; border-left:0px; border-bottom: 1px;"><b>Price</b></th>'
-  + '<th  colspan="2" align="center" style="border-top:0px; border-right:0px; border-left:0px; border-bottom: 1px;"><b>' + (isAmericas ? 'TAX' : 'GST') + '</b></th>'
-  + '<th  colspan="2" align="right"  style="border-top:0px; border-right:0px; border-left:0px; border-bottom: 1px;"><b>' + TAX_LABEL_AMT + '</b></th>'
-  + '<th  colspan="2" align="right"  style="border-top:0px; border-left:0px; border-bottom: 1px;"><b>Amount ' + currencyText + '</b></th>'
-  + '</tr>'
+      + '<tr>'
+      + '<th  colspan="8" align="left"   style="border-top:0px; border-right:0px; border-bottom: 1px;"><b>Description</b></th>'
+      + '<th  colspan="2" align="right"  style="border-top:0px; border-right:0px; border-left:0px; border-bottom: 1px;"><b>Price</b></th>'
+      + '<th  colspan="2" align="center" style="border-top:0px; border-right:0px; border-left:0px; border-bottom: 1px;"><b>' + (isAmericas ? 'TAX' : 'GST') + '</b></th>'
+      + '<th  colspan="2" align="right"  style="border-top:0px; border-right:0px; border-left:0px; border-bottom: 1px;"><b>' + TAX_LABEL_AMT + '</b></th>'
+      + '<th  colspan="2" align="right"  style="border-top:0px; border-left:0px; border-bottom: 1px;"><b>Amount ' + currencyText + '</b></th>'
+      + '</tr>'
 
-  + rowsHtml
+      + rowsHtml
 
-  + '<tr><td colspan="10" style="border:none;">&nbsp;</td></tr>'
-  + '<tr><td rowspan="3" colspan="12" style="border:none;"></td><td colspan="2" align="right" style="border:none;">Subtotal</td><td colspan="2" align="right" style="border:none;">' + money(subTotalExTax) + '</td></tr>'
-  + '<tr><td colspan="2" align="right" style="border:none;">' + TAX_LABEL_TOTAL + '</td><td colspan="2" align="right" style="border:none;">' + money(Math.abs(totalTax)) + '</td></tr>'
-  + '<tr><td colspan="2" align="right" style="border-top:1px; border-left:0px; border-right:0px; border-bottom: 0px;"><b>TOTAL ' + currencyText + '</b></td><td colspan="2" align="right" style="border-top:1px; border-right:0px; border-left:0px; border-bottom: 0px;"><b>' + money(grandTotal) + '</b></td></tr>'
+      + '<tr><td colspan="10" style="border:none;">&nbsp;</td></tr>'
+      + '<tr><td rowspan="3" colspan="12" style="border:none;"></td><td colspan="2" align="right" style="border:none;">Subtotal</td><td colspan="2" align="right" style="border:none;">' + money(subTotalExTax) + '</td></tr>'
+      + '<tr><td colspan="2" align="right" style="border:none;">' + TAX_LABEL_TOTAL + '</td><td colspan="2" align="right" style="border:none;">' + money(Math.abs(totalTax)) + '</td></tr>'
+      + '<tr><td colspan="2" align="right" style="border-top:1px; border-left:0px; border-right:0px; border-bottom: 0px;"><b>TOTAL ' + currencyText + '</b></td><td colspan="2" align="right" style="border-top:1px; border-right:0px; border-left:0px; border-bottom: 0px;"><b>' + money(grandTotal) + '</b></td></tr>'
 
-  + '<tr><td colspan="16" style="border:none;">&nbsp;</td></tr>'
-  + '<tr><td colspan="16" style="border:none;">'
-  + '<b>Sales Orders:</b> ' + esc(soNumbers.join(', ')) + '<br/><br/>'
-  + '<b>Customer:</b> ' + esc(customerNames.join(', ')) + '<br/><br/>'
-  + '<b>Due Date:</b> ' + dueDate + '<br/><br/>'
-  + '<b>Payment Terms:</b> ' + terms + '<br/><br/>'
-  + 'Please email remittance advice to ' + remitEmail + '<br/><br/>'
-  + '<b>BANK ACCOUNT DETAILS</b><br/>'
-  + 'Account Name: ' + acctName + '<br/>'
-  + 'Bank: ' + bankName + '<br/>'
-  + 'BSB: ' + bsb + '<br/>'
-  + 'Account: ' + acctNum
-  + '</td></tr>'
-  + '</table>';
+      + '<tr><td colspan="16" style="border:none;">&nbsp;</td></tr>'
+      + '<tr><td colspan="16" style="border:none;">'
+      + '<b>Sales Orders:</b> ' + esc(soNumbers.join(', ')) + '<br/><br/>'
+      + '<b>Customer:</b> ' + esc(customerNames.join(', ')) + '<br/><br/>'
+      + '<b>Due Date:</b> ' + dueDate + '<br/><br/>'
+      + '<b>Payment Terms:</b> ' + terms + '<br/><br/>'
+      + 'Please email remittance advice to ' + remitEmail + '<br/><br/>'
+      + '<b>BANK ACCOUNT DETAILS</b><br/>'
+      + 'Account Name: ' + acctName + '<br/>'
+      + 'Bank: ' + bankName + '<br/>'
+      + 'BSB: ' + bsb + '<br/>'
+      + 'Account: ' + acctNum
+      + '</td></tr>'
+      + '</table>';
 
     return {
       tranIds: tranIds,
@@ -354,7 +291,25 @@ define([
       subTotalExTax: subTotalExTax,
       totalTax: totalTax,
       grandTotal: grandTotal,
-      replaceLabor: replaceLabor
+      replaceLabor: replaceLabor,
+      billAddrHtml: billAddrHtml,
+      dueDate: dueDate,
+      terms: terms,
+      currencyText: currencyText,
+      soDate: soDate,
+      isAmericas: isAmericas,
+      TAX_LABEL_RATE: TAX_LABEL_RATE,
+      TAX_LABEL_AMT: TAX_LABEL_AMT,
+      TAX_LABEL_TOTAL: TAX_LABEL_TOTAL,
+      subLegal: subLegal,
+      subAddrHtml: subAddrHtml,
+      subABN: subABN,
+      remitEmail: remitEmail,
+      acctName: acctName,
+      bankName: bankName,
+      bsb: bsb,
+      acctNum: acctNum,
+      catMap: catMap
     };
   }
 
@@ -417,11 +372,9 @@ define([
     };
 
     var groupedFinalArray = buildTimesheetHourGroups(soId, empNameArr, replaceLabor);
-    log.debug('groupedFinalArray', groupedFinalArray)
     groupedFinalArray = mergeTimesheetSourceTransactionGroups(soId, groupedFinalArray, replaceLabor);
-log.debug('groupedFinalArray', groupedFinalArray)
     var legendArray = buildLegendArray(groupedFinalArray, replaceLabor);
-log.debug('legendArray', legendArray)
+
     return {
       soId: soId,
       replaceLabor: replaceLabor,
@@ -432,8 +385,8 @@ log.debug('legendArray', legendArray)
   }
 
   function buildTimesheetHourGroups(soId, empNameArr, replaceLabor) {
-    log.debug('soId', soId)
     var shiftSortOrder = ['ST', 'OT', 'OT1.5', 'DT', 'NT', 'RDO'];
+
     var salesorderSearchObj = search.create({
       type: 'salesorder',
       settings: [{ name: 'consolidationtype', value: 'NONE' }],
@@ -458,33 +411,12 @@ log.debug('legendArray', legendArray)
         search.createColumn({ name: 'custcol_bc_time_type', join: 'CUSTCOL_BC_TM_TIME_BILL', summary: 'GROUP' }),
         search.createColumn({ name: 'custcol_bc_tm_billing_shift', join: 'CUSTCOL_BC_TM_TIME_BILL', summary: 'GROUP' }),
         search.createColumn({ name: 'date', join: 'CUSTCOL_BC_TM_TIME_BILL', summary: 'GROUP', sort: search.Sort.ASC }),
-        search.createColumn({
-          name: 'custcol_bc_tm_line_id',
-          summary: 'GROUP'
-        }),
-        search.createColumn({
-          name: 'memo',
-          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
-          summary: 'GROUP'
-        }),
-        search.createColumn({
-          name: 'trandate',
-          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
-          summary: 'GROUP'
-        }),
-        search.createColumn({
-          name: 'quantity',
-          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
-          summary: 'SUM'
-        }),
-        search.createColumn({
-          name: 'rate',
-          summary: 'MAX'
-        }),
-        search.createColumn({
-          name: 'amount',
-          summary: 'SUM'
-        })
+        search.createColumn({ name: 'custcol_bc_tm_line_id', summary: 'GROUP' }),
+        search.createColumn({ name: 'memo', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' }),
+        search.createColumn({ name: 'trandate', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' }),
+        search.createColumn({ name: 'quantity', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'SUM' }),
+        search.createColumn({ name: 'rate', summary: 'MAX' }),
+        search.createColumn({ name: 'amount', summary: 'SUM' })
       ]
     });
 
@@ -492,7 +424,6 @@ log.debug('legendArray', legendArray)
     var uniqueDates = {};
 
     salesorderSearchObj.run().each(function (result) {
-      log.debug('result', result)
       var billRentalRole = result.getValue({ name: 'memo', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' });
       billRentalRole = (billRentalRole === '- None -' || !billRentalRole) ? '' : billRentalRole;
 
@@ -502,10 +433,10 @@ log.debug('legendArray', legendArray)
 
       var shiftType = result.getText({ name: 'custcol_bc_time_type', join: 'CUSTCOL_BC_TM_TIME_BILL', summary: 'GROUP' }) || '';
       var dateStr = result.getValue({ name: 'date', join: 'CUSTCOL_BC_TM_TIME_BILL', summary: 'GROUP' }) ||
-                    result.getValue({ name: 'trandate', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' });
+        result.getValue({ name: 'trandate', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' });
 
       var hours = parseFloat(result.getValue({ name: 'durationdecimal', join: 'CUSTCOL_BC_TM_TIME_BILL', summary: 'SUM' })) ||
-                  parseFloat(result.getValue({ name: 'quantity', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'SUM' })) || 0;
+        parseFloat(result.getValue({ name: 'quantity', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'SUM' })) || 0;
 
       var note = result.getValue({ name: 'memo', join: 'CUSTCOL_BC_TM_TIME_BILL', summary: 'GROUP' }) || '';
       var groupType = result.getText({ name: 'custcol_invoicing_category', summary: 'GROUP' }) || '';
@@ -669,68 +600,30 @@ log.debug('legendArray', legendArray)
         'AND',
         ['internalid', 'anyof', [soId]],
         'AND',
-        ["formulatext: case when {custcol_bc_tm_line_id} = {custcol_bc_tm_source_transaction.line} then 1 else 0 end", 'is', '1']
+        ['formulatext: case when {custcol_bc_tm_line_id} = {custcol_bc_tm_source_transaction.line} then 1 else 0 end', 'is', '1']
       ],
       columns: [
-        search.createColumn({
-          name: 'custcol_invoicing_category',
-          summary: 'GROUP'
-        }),
-        search.createColumn({
-          name: 'tranid',
-          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
-          summary: 'GROUP'
-        }),
-        search.createColumn({
-          name: 'mainname',
-          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
-          summary: 'GROUP'
-        }),
-        search.createColumn({
-          name: 'amount',
-          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
-          summary: 'MAX'
-        }),
-        search.createColumn({
-          name: 'taxamount',
-          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
-          summary: 'MAX'
-        }),
-        search.createColumn({
-          name: 'line',
-          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
-          summary: 'GROUP'
-        }),
-        search.createColumn({
-          name: 'memo',
-          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
-          summary: 'GROUP'
-        }),
+        search.createColumn({ name: 'custcol_invoicing_category', summary: 'GROUP' }),
+        search.createColumn({ name: 'tranid', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' }),
+        search.createColumn({ name: 'mainname', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' }),
+        search.createColumn({ name: 'amount', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'MAX' }),
+        search.createColumn({ name: 'taxamount', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'MAX' }),
+        search.createColumn({ name: 'line', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' }),
+        search.createColumn({ name: 'memo', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' }),
         search.createColumn({
           name: 'formulatext',
           summary: 'MAX',
           formula: "CASE WHEN {custcol_bc_tm_source_transaction.appliedtotransaction} LIKE 'Purchase Order%' THEN TRIM(REPLACE({custcol_bc_tm_source_transaction.appliedtotransaction}, 'Purchase Order', '')) ELSE {custcol_bc_tm_source_transaction.tranid} END"
         }),
-        search.createColumn({
-          name: 'custcol_bc_tm_line_id',
-          summary: 'GROUP'
-        }),
-        search.createColumn({
-          name: 'amount',
-          summary: 'MAX'
-        }),
-        search.createColumn({
-          name: 'expensecategory',
-          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
-          summary: 'GROUP'
-        })
+        search.createColumn({ name: 'custcol_bc_tm_line_id', summary: 'GROUP' }),
+        search.createColumn({ name: 'amount', summary: 'MAX' }),
+        search.createColumn({ name: 'expensecategory', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' })
       ]
     });
 
     var tranFinalArray = {};
 
     transactionSearch.run().each(function (result) {
-      
       var invoicingCategory = result.getText({
         name: 'custcol_invoicing_category',
         summary: 'GROUP'
@@ -846,6 +739,8 @@ log.debug('legendArray', legendArray)
   // EXCEL HTML
   // --------------------------------------------------------------------------
   function buildExcelHtml(invoiceData, timesheetDataByTran) {
+    var rowCtx = { row: 1 };
+
     var html = ''
       + '<html xmlns:x="urn:schemas-microsoft-com:office:excel">'
       + '<head>'
@@ -863,22 +758,25 @@ log.debug('legendArray', legendArray)
       + '</head>'
       + '<body>';
 
-    // Consolidated draft invoice
     html += '<div id="sheet1">';
-    html += invoiceData.invoiceBlockHtml;
+
+    html += buildInvoiceExcelBlock(invoiceData, rowCtx);
+
     html += '<br/><br/>';
 
     html += '<table style="width:100%; border-collapse:collapse;">'
       + '<tr><td colspan="20" style="background-color:#000; height:8px;"></td></tr>'
-      + '</table>'
-      + '<br/><br/>';
+      + '</table>';
+    rowCtx.row += 1;
 
-    // Timesheet blocks by tranid
+    html += '<br/><br/>';
+
     for (var i = 0; i < timesheetDataByTran.length; i++) {
-      html += buildTimesheetHtmlBlock(timesheetDataByTran[i]);
+      html += buildTimesheetHtmlBlock(timesheetDataByTran[i], rowCtx);
 
       if (i !== timesheetDataByTran.length - 1) {
         html += '<br/><br/><br/><table style="width:100%; border-collapse:collapse;"><tr><td colspan="20" style="background-color:#000; height:8px;"></td></tr></table><br/><br/><br/>';
+        rowCtx.row += 1;
       }
     }
 
@@ -886,7 +784,135 @@ log.debug('legendArray', legendArray)
     return html;
   }
 
-  function buildTimesheetHtmlBlock(ts) {
+  function buildInvoiceExcelBlock(invoiceData, rowCtx) {
+    var html = '';
+
+    html += ''
+      + '<table style="width:100%; border-collapse:collapse; font-family:Arial; border:1px solid #000; border-bottom:0px solid #000;">'
+      + '<tr>'
+      + '<td colspan="11" rowspan="7" style="font-size:30pt; vertical-align:middle; font-weight:bold; border:none;">DRAFT INVOICE</td>'
+      + '<td colspan="5" rowspan="7" align="right" style="vertical-align:middle; font-weight:bold; border:none;"><img src="' + invoiceData.logoUrl + '" height="100" /></td>'
+      + '</tr>'
+      + '</table>';
+    rowCtx.row += 1;
+
+    html += ''
+      + '<table style="width:100%; border-collapse:collapse; font-family:Arial; font-size:10pt; border:1px solid #000; border-top:0px solid #000;">';
+
+    html += ''
+      + '<tr>'
+      + '<td colspan="5" rowspan="4" valign="top" style="border:none;"><b>ATTN:</b><br/>' + invoiceData.billAddrHtml + '</td>'
+      + '<td colspan="6" valign="top" style="border:none;"><b>Invoice Date:</b><br/>' + invoiceData.soDate + '</td>'
+      + '<td colspan="5" rowspan="4" align="right" valign="top" style="border:none;">' + invoiceData.subAddrHtml + '<br/><b>ABN:</b> ' + invoiceData.subABN + '</td>'
+      + '</tr>';
+    rowCtx.row += 1;
+
+    html += '<tr><td colspan="6" valign="top" style="border:none;"><b>Invoice Number:</b><br/>DRAFT</td></tr>';
+    rowCtx.row += 1;
+
+    html += '<tr><td colspan="6" valign="top" style="border:none;"><b>PO Number:</b><br/>' + esc(invoiceData.poNumbers.join(', ')) + '</td></tr>';
+    rowCtx.row += 1;
+
+    html += '<tr><td colspan="6" valign="top" style="border:none;"><b>Customer Reference:</b><br/>' + esc(invoiceData.projectRefs.join(', ')) + '</td></tr>';
+    rowCtx.row += 1;
+
+    html += '<tr><td colspan="16" style="border:none;">&nbsp;</td></tr>';
+    rowCtx.row += 1;
+
+    html += '<tr><td colspan="16" style="border:none;"><b>Memo:</b><br/>' + esc(invoiceData.memos.join(' | ')) + '</td></tr>';
+    rowCtx.row += 1;
+
+    html += '<tr><td colspan="16" style="border:none;">&nbsp;</td></tr>';
+    rowCtx.row += 1;
+
+    html += ''
+      + '<tr>'
+      + '<th colspan="8" align="left" style="border-top:0px; border-right:0px; border-bottom:1px;"><b>Description</b></th>'
+      + '<th colspan="2" align="right" style="border-top:0px; border-right:0px; border-left:0px; border-bottom:1px;"><b>Price</b></th>'
+      + '<th colspan="2" align="center" style="border-top:0px; border-right:0px; border-left:0px; border-bottom:1px;"><b>' + (invoiceData.isAmericas ? 'TAX' : 'GST') + '</b></th>'
+      + '<th colspan="2" align="right" style="border-top:0px; border-right:0px; border-left:0px; border-bottom:1px;"><b>' + invoiceData.TAX_LABEL_AMT + '</b></th>'
+      + '<th colspan="2" align="right" style="border-top:0px; border-left:0px; border-bottom:1px;"><b>Amount ' + invoiceData.currencyText + '</b></th>'
+      + '</tr>';
+    rowCtx.row += 1;
+
+    var categories = Object.keys(invoiceData.catMap || {}).sort();
+    var detailStartRow = rowCtx.row;
+
+    for (var i = 0; i < categories.length; i++) {
+      var cat = categories[i];
+      var amt = parseFloat(invoiceData.catMap[cat].amountSum || 0) || 0;
+      var txa = Math.abs(parseFloat(invoiceData.catMap[cat].taxAmtSum || 0) || 0);
+      var txr = parseFloat(invoiceData.catMap[cat].taxRateMax || 0) || 0;
+      var currentRow = rowCtx.row;
+
+      html += ''
+        + '<tr>'
+        + '<td colspan="8" style="border-right:0px; border-top:0px; border-bottom:1px solid #C9C9C9;">' + esc(cat) + '</td>'
+        + '<td colspan="2" align="right" style="border-right:0px; border-top:0px; border-left:0px; border-bottom:1px solid #C9C9C9; mso-number-format:\\0022$\\0022#,##0.00;">' + amt.toFixed(2) + '</td>'
+        + '<td colspan="2" align="center" style="border-right:0px; border-top:0px; border-left:0px; border-bottom:1px solid #C9C9C9;">' + txr.toFixed(2) + '%</td>'
+        + '<td colspan="2" align="right" style="border-right:0px; border-top:0px; border-left:0px; border-bottom:1px solid #C9C9C9; mso-number-format:\\0022$\\0022#,##0.00;">' + txa.toFixed(2) + '</td>'
+        + '<td colspan="2" align="right" style="border-left:0px; border-top:0px; border-bottom:1px solid #C9C9C9; mso-number-format:\\0022$\\0022#,##0.00;">=I' + currentRow + '+M' + currentRow + '</td>'
+        + '</tr>';
+
+      rowCtx.row += 1;
+    }
+
+    var detailEndRow = rowCtx.row - 1;
+
+    html += '<tr><td colspan="10" style="border:none;">&nbsp;</td></tr>';
+    rowCtx.row += 1;
+
+    var subtotalRow = rowCtx.row;
+    html += ''
+      + '<tr>'
+      + '<td rowspan="3" colspan="12" style="border:none;"></td>'
+      + '<td colspan="2" align="right" style="border:none;">Subtotal</td>'
+      + '<td colspan="2" align="right" style="border:none; mso-number-format:\\0022$\\0022#,##0.00;">=SUM(I' + detailStartRow + ':I' + detailEndRow + ')</td>'
+      + '</tr>';
+    rowCtx.row += 1;
+
+    var gstTotalRow = rowCtx.row;
+    html += ''
+      + '<tr>'
+      + '<td colspan="2" align="right" style="border:none;">' + invoiceData.TAX_LABEL_TOTAL + '</td>'
+      + '<td colspan="2" align="right" style="border:none; mso-number-format:\\0022$\\0022#,##0.00;">=SUM(M' + detailStartRow + ':M' + detailEndRow + ')</td>'
+      + '</tr>';
+    rowCtx.row += 1;
+
+    var totalAudRow = rowCtx.row;
+    html += ''
+      + '<tr>'
+      + '<td colspan="2" align="right" style="border-top:1px; border-left:0px; border-right:0px; border-bottom:0px;"><b>TOTAL ' + invoiceData.currencyText + '</b></td>'
+      + '<td colspan="2" align="right" style="border-top:1px; border-right:0px; border-left:0px; border-bottom:0px; mso-number-format:\\0022$\\0022#,##0.00;"><b>=P' + subtotalRow + '+P' + gstTotalRow + '</b></td>'
+      + '</tr>';
+    rowCtx.row += 1;
+
+    html += '<tr><td colspan="16" style="border:none;">&nbsp;</td></tr>';
+    rowCtx.row += 1;
+
+    html += ''
+      + '<tr>'
+      + '<td colspan="16" style="border:none;">'
+      + '<b>Sales Orders:</b> ' + esc(invoiceData.soNumbers.join(', ')) + '<br/><br/>'
+      + '<b>Customer:</b> ' + esc(invoiceData.customerNames.join(', ')) + '<br/><br/>'
+      + '<b>Due Date:</b> ' + invoiceData.dueDate + '<br/><br/>'
+      + '<b>Payment Terms:</b> ' + invoiceData.terms + '<br/><br/>'
+      + 'Please email remittance advice to ' + invoiceData.remitEmail + '<br/><br/>'
+      + '<b>BANK ACCOUNT DETAILS</b><br/>'
+      + 'Account Name: ' + invoiceData.acctName + '<br/>'
+      + 'Bank: ' + invoiceData.bankName + '<br/>'
+      + 'BSB: ' + invoiceData.bsb + '<br/>'
+      + 'Account: ' + invoiceData.acctNum
+      + '</td>'
+      + '</tr>';
+    rowCtx.row += 1;
+
+    html += '</table>';
+
+    return html;
+  }
+
+  function buildTimesheetHtmlBlock(ts, rowCtx) {
     var x = ts.groupedData || {};
     var h = ts.headerInfo || {};
     var labelLabor = ts.replaceLabor ? 'Labour' : 'Labor';
@@ -903,6 +929,7 @@ log.debug('legendArray', legendArray)
       + '</tr>'
       + '</table>'
       + '<br/><br/><br/>';
+    rowCtx.row += 1;
 
     html += ''
       + '<table style="width:100%; border-collapse:collapse; font-size:9pt; table-layout:fixed; margin-top:10px;">'
@@ -910,7 +937,7 @@ log.debug('legendArray', legendArray)
       + '<td colspan="2" style="width:49%; vertical-align:top;">'
       + '<table style="width:100%; border-collapse:collapse;">'
       + '<tr><td class="info-header" colspan="2">Client:</td><td style="border:1px solid #000;" colspan="4">' + esc(h.client) + '</td></tr>'
-      + '<tr><td class="info-header" colspan="2">Customer Ref #:</td><td style="border:1px solid #000; " colspan="4">' + esc(h.customerRef) + '</td></tr>'
+      + '<tr><td class="info-header" colspan="2">Customer Ref #:</td><td style="border:1px solid #000;" colspan="4">' + esc(h.customerRef) + '</td></tr>'
       + '<tr><td class="info-header" colspan="2">Week-Ending:</td><td style="border:1px solid #000; mso-number-format:\\@;" colspan="4">' + formatDateMMDDYYYY(h.weekEnding) + '</td></tr>'
       + '<tr><td class="info-header" colspan="2">C2O Project Manager:</td><td style="border:1px solid #000;" colspan="4">' + esc(h.projectManager) + '</td></tr>'
       + '<tr><td class="info-header" colspan="2">Description of Work:</td><td style="border:1px solid #000;" colspan="4">' + esc(h.description) + '</td></tr>'
@@ -932,20 +959,29 @@ log.debug('legendArray', legendArray)
       + '</tr>'
       + '</table>'
       + '<br/><br/><br/>';
-    log.debug('LaborMap', x.Labor || x.Labour)
+    rowCtx.row += 1;
+
     if (x.Labor || x.Labour) {
+      var labor = x.Labor || x.Labour;
+      var dayStartCol = 7;
+      var dayEndCol = dayStartCol + labor[0].days.length - 1;
+      var totalWeekCol = dayEndCol + 1;
+      var rateCol = totalWeekCol + 1;
+      var claimAmtCol = rateCol + 1;
+
       html += '<table>'
         + '<tr>'
         + '<th class="table-header" colspan="6">' + labelLabor + '</th>'
         + '<td colspan="15" align="center" style="border-top:1px solid #000; border-bottom:1px solid #000; border-left:1px solid #000; border-right:1px solid #000;">ALL HOURS SHOWN ARE HOURS WORKED</td>'
-        + '</tr>'
-        + '<tr>'
+        + '</tr>';
+      rowCtx.row += 1;
+
+      html += '<tr>'
         + '<th class="table-header" colspan="2" rowspan="2">Name</th>'
         + '<th class="table-header" colspan="2" rowspan="2">Role</th>'
         + '<th class="table-header" rowspan="2">Time Type</th>'
         + '<th class="table-header" rowspan="2">Shift Type</th>';
 
-      var labor = x.Labor || x.Labour;
       for (var i1 = 0; i1 < labor[0].days.length; i1++) {
         html += '<th class="table-header">' + getDayName(labor[0].days[i1].date) + '</th>';
       }
@@ -954,59 +990,77 @@ log.debug('legendArray', legendArray)
         + '<th class="table-header" rowspan="2">Rate</th>'
         + '<th class="table-header" rowspan="2">Claim Amount</th>'
         + '<th class="table-header" rowspan="2" colspan="' + (12 - labor[0].days.length) + '">Notes</th>'
-        + '</tr>'
-        + '<tr>';
+        + '</tr>';
+      rowCtx.row += 1;
 
+      html += '<tr>';
       for (var i2 = 0; i2 < labor[0].days.length; i2++) {
         html += '<th class="table-header" style="mso-number-format:\\@;">' + formatDateMMDDYYYY(labor[0].days[i2].date) + '</th>';
       }
-
       html += '</tr>';
+      rowCtx.row += 1;
+
+      var laborDetailStartRow = rowCtx.row;
 
       for (var q = 1; q < labor.length - 1; q++) {
-  html += '<tr>'
-    + '<td colspan="2">' + labor[q].employee + '</td>'
-    + '<td colspan="2">' + labor[q].role + '</td>'
-    + '<td>' + labor[q].shiftType + '</td>'
-    + '<td>' + labor[q].shift + '</td>';
+        var currentRow = rowCtx.row;
 
-  for (var w = 0; w < labor[q].days.length; w++) {
-    html += '<td>' + labor[q].days[w].hours + '</td>';
-  }
+        html += '<tr>'
+          + '<td colspan="2">' + labor[q].employee + '</td>'
+          + '<td colspan="2">' + labor[q].role + '</td>'
+          + '<td>' + labor[q].shiftType + '</td>'
+          + '<td>' + labor[q].shift + '</td>';
 
-  html += '<td>' + labor[q].totalWeek + '</td>'
-    + '<td>' + formatCurrency(labor[q].rate) + '</td>'
-    + '<td>' + formatCurrency(labor[q].amt) + '</td>'
-    + '<td colspan="' + (12 - labor[q].days.length) + '"></td>'
-    + '</tr>';
-}
+        for (var w = 0; w < labor[q].days.length; w++) {
+          html += '<td>' + labor[q].days[w].hours + '</td>';
+        }
 
-// last element separate
-if (labor.length > 1) {
-  var last = labor[labor.length - 1];
+        html += '<td style="mso-number-format:0.0;">=SUM(' + colLetter(dayStartCol) + currentRow + ':' + colLetter(dayEndCol) + currentRow + ')</td>'
+          + '<td style="mso-number-format:\\0022$\\0022#,##0.00;">' + parseFloat(labor[q].rate || 0).toFixed(2) + '</td>'
+          + '<td style="mso-number-format:\\0022$\\0022#,##0.00;">=ROUND(' + colLetter(totalWeekCol) + currentRow + '*' + colLetter(rateCol) + currentRow + ',2)</td>'
+          + '<td colspan="' + (12 - labor[q].days.length) + '">' + (labor[q].notes || '') + '</td>'
+          + '</tr>';
 
-  html += '<tr>'
-    + '<td colspan="5" style="border-left: 0; border-bottom: 0;"></td>'
-    + '<td class="table-header"><b>' + last.employee + '</b></td>';
+        rowCtx.row += 1;
+      }
 
-  for (var w = 0; w < last.days.length; w++) {
-    html += '<td class="table-header"><b>' + last.days[w].hours + '</b></td>';
-  }
+      var laborDetailEndRow = rowCtx.row - 1;
 
-  html += '<td class="table-header"><b>' + last.totalWeek + '</b></td>'
-    + '<td class="table-header"><b>' + formatCurrency(last.rate) + '</b></td>'
-    + '<td class="table-header"><b>' + formatCurrency(last.amt) + '</b></td>'
-    + '</tr>';
-}
+      if (labor.length > 1) {
+        var totalRowNum = rowCtx.row;
+        var last = labor[labor.length - 1];
+
+        html += '<tr>'
+          + '<td colspan="5" style="border-left: 0; border-bottom: 0;"></td>'
+          + '<td class="table-header"><b>' + last.employee + '</b></td>';
+
+        for (var ww = 0; ww < last.days.length; ww++) {
+          var sumCol = dayStartCol + ww;
+          html += '<td class="table-header"><b>=SUM(' + colLetter(sumCol) + laborDetailStartRow + ':' + colLetter(sumCol) + laborDetailEndRow + ')</b></td>';
+        }
+
+        html += '<td class="table-header"><b>=SUM(' + colLetter(totalWeekCol) + laborDetailStartRow + ':' + colLetter(totalWeekCol) + laborDetailEndRow + ')</b></td>'
+          + '<td class="table-header"><b></b></td>'
+          + '<td class="table-header"><b>=SUM(' + colLetter(claimAmtCol) + laborDetailStartRow + ':' + colLetter(claimAmtCol) + laborDetailEndRow + ')</b></td>'
+          + '</tr>';
+
+        rowCtx.row += 1;
+      }
+
       html += '</table>';
     }
 
     if (x['Equipment / Vehicle Rental']) {
       var equp = x['Equipment / Vehicle Rental'];
+      var equDayStartCol = 5;
+      var equDayEndCol = equDayStartCol + equp[0].days.length - 1;
+      var equTotalWeekCol = equDayEndCol + 1;
 
       html += '<br/><br/><br/><table>'
-        + '<tr><th colspan="8">Equipment / Vehicle Rental</th></tr>'
-        + '<tr>'
+        + '<tr><th colspan="8">Equipment / Vehicle Rental</th></tr>';
+      rowCtx.row += 1;
+
+      html += '<tr>'
         + '<th colspan="4" rowspan="2">Role</th>';
 
       for (var e1 = 0; e1 < equp[0].days.length; e1++) {
@@ -1015,23 +1069,35 @@ if (labor.length > 1) {
 
       html += '<th rowspan="2">Total Week</th>'
         + '<th rowspan="2" colspan="' + (14 - equp[0].days.length) + '">Notes</th>'
-        + '</tr>'
-        + '<tr>';
+        + '</tr>';
+      rowCtx.row += 1;
 
+      html += '<tr>';
       for (var e2 = 0; e2 < equp[0].days.length; e2++) {
         html += '<th style="mso-number-format:\\@;">' + formatDateMMDDYYYY(equp[0].days[e2].date) + '</th>';
       }
-
       html += '</tr>';
+      rowCtx.row += 1;
 
       for (var r = 1; r < equp.length; r++) {
+        var equRow = rowCtx.row;
+        var isEquTotal = (r === equp.length - 1 && String(equp[r].employee || '').toUpperCase() === 'TOTAL');
+
         html += '<tr><td colspan="4">' + equp[r].role + '</td>';
         for (var t = 0; t < equp[r].days.length; t++) {
           html += '<td>' + equp[r].days[t].hours + '</td>';
         }
-        html += '<td>' + equp[r].totalWeek + '</td>'
-          + '<td colspan="' + (14 - equp[r].days.length) + '"></td>'
+
+        if (isEquTotal) {
+          html += '<td>' + equp[r].totalWeek + '</td>';
+        } else {
+          html += '<td style="mso-number-format:0.0;">=SUM(' + colLetter(equDayStartCol) + equRow + ':' + colLetter(equDayEndCol) + equRow + ')</td>';
+        }
+
+        html += '<td colspan="' + (14 - equp[r].days.length) + '"></td>'
           + '</tr>';
+
+        rowCtx.row += 1;
       }
 
       html += '</table>';
@@ -1039,8 +1105,10 @@ if (labor.length > 1) {
 
     if (x.Materials) {
       html += '<br/><br/><br/><table>'
-        + '<tr><th class="table-header" colspan="5">Materials</th></tr>'
-        + '<tr>'
+        + '<tr><th class="table-header" colspan="5">Materials</th></tr>';
+      rowCtx.row += 1;
+
+      html += '<tr>'
         + '<th class="table-header" colspan="2">Supplier Invoice #</th>'
         + '<th class="table-header" colspan="3">Supplier</th>'
         + '<th class="table-header" colspan="2">PO #</th>'
@@ -1048,15 +1116,22 @@ if (labor.length > 1) {
         + '<th class="table-header">Total Cost excl. Tax</th>'
         + '<th class="table-header">Cost + Mark up</th>'
         + '</tr>';
+      rowCtx.row += 1;
+
+      var matCostCol = 16;
+      var matAmtCol = 17;
+      var matStartRow = rowCtx.row;
 
       for (var p = 0; p < x.Materials.length; p++) {
         var m = x.Materials[p];
+        var matRow = rowCtx.row;
+
         if (m.documentNumber === 'TOTAL') {
           html += '<tr>'
             + '<td colspan="13" style="border:0px solid #000;"></td>'
             + '<td colspan="2" align="right" style="background-color:#3a4b87; color:white; font-weight:bold;">Total</td>'
-            + '<td align="right"></td>'
-            + '<td align="right" style="font-weight:bold;" >' + m.amount + '</td>'
+            + '<td align="right" style="mso-number-format:\\0022$\\0022#,##0.00; background-color:#3a4b87; color:white; font-weight:bold;">=SUM(' + colLetter(matCostCol) + matStartRow + ':' + colLetter(matCostCol) + (matRow - 1) + ')</td>'
+            + '<td align="right" style="mso-number-format:\\0022$\\0022#,##0.00; font-weight:bold;">=SUM(' + colLetter(matAmtCol) + matStartRow + ':' + colLetter(matAmtCol) + (matRow - 1) + ')</td>'
             + '</tr>';
         } else {
           html += '<tr>'
@@ -1064,10 +1139,12 @@ if (labor.length > 1) {
             + '<td colspan="3">' + m.mainName + '</td>'
             + '<td colspan="2">' + m.cleanedPO + '</td>'
             + '<td colspan="8">' + m.memo + '</td>'
-            + '<td align="right">' + formatCurrency(m.cost) + '</td>'
-            + '<td align="right">' + formatCurrency(m.amount) + '</td>'
+            + '<td align="right" style="mso-number-format:\\0022$\\0022#,##0.00;">' + parseFloat(m.cost || 0).toFixed(2) + '</td>'
+            + '<td align="right" style="mso-number-format:\\0022$\\0022#,##0.00;">' + parseFloat(m.amount || 0).toFixed(2) + '</td>'
             + '</tr>';
         }
+
+        rowCtx.row += 1;
       }
 
       html += '</table>';
@@ -1075,33 +1152,44 @@ if (labor.length > 1) {
 
     if (x.Expenses) {
       html += '<br/><br/><br/><table>'
-        + '<tr><th class="table-header" colspan="5">Expenses</th></tr>'
-        + '<tr>'
+        + '<tr><th class="table-header" colspan="5">Expenses</th></tr>';
+      rowCtx.row += 1;
+
+      html += '<tr>'
         + '<th class="table-header" colspan="5">Expense Category</th>'
         + '<th class="table-header" colspan="2">PO #</th>'
         + '<th class="table-header" colspan="8">Description</th>'
         + '<th class="table-header">Total Cost excl. Tax</th>'
         + '<th class="table-header">Cost + Mark up</th>'
         + '</tr>';
+      rowCtx.row += 1;
+
+      var expCostCol = 16;
+      var expAmtCol = 17;
+      var expStartRow = rowCtx.row;
 
       for (var a = 0; a < x.Expenses.length; a++) {
         var e = x.Expenses[a];
+        var expRow = rowCtx.row;
+
         if (e.documentNumber === 'TOTAL') {
           html += '<tr>'
             + '<td colspan="5" style="border:0px solid #000; background-color:#3a4b87; color:white; font-weight:bold;">Total</td>'
             + '<td colspan="10" align="right"></td>'
-            + '<td align="right" style="background-color:#3a4b87; color:white; font-weight:bold;">' + e.cost + '</td>'
-            + '<td align="right" style="background-color:#3a4b87; color:white; font-weight:bold;">' + e.amount + '</td>'
+            + '<td align="right" style="background-color:#3a4b87; color:white; font-weight:bold; mso-number-format:\\0022$\\0022#,##0.00;">=SUM(' + colLetter(expCostCol) + expStartRow + ':' + colLetter(expCostCol) + (expRow - 1) + ')</td>'
+            + '<td align="right" style="background-color:#3a4b87; color:white; font-weight:bold; mso-number-format:\\0022$\\0022#,##0.00;">=SUM(' + colLetter(expAmtCol) + expStartRow + ':' + colLetter(expAmtCol) + (expRow - 1) + ')</td>'
             + '</tr>';
         } else {
           html += '<tr>'
             + '<td colspan="5">' + e.expCat + '</td>'
             + '<td colspan="2">' + e.cleanedPO + '</td>'
             + '<td colspan="8">' + e.memo + '</td>'
-            + '<td align="right">' + formatCurrency(e.cost) + '</td>'
-            + '<td align="right">' + formatCurrency(e.amount) + '</td>'
+            + '<td align="right" style="mso-number-format:\\0022$\\0022#,##0.00;">' + parseFloat(e.cost || 0).toFixed(2) + '</td>'
+            + '<td align="right" style="mso-number-format:\\0022$\\0022#,##0.00;">' + parseFloat(e.amount || 0).toFixed(2) + '</td>'
             + '</tr>';
         }
+
+        rowCtx.row += 1;
       }
 
       html += '</table><br/><br/><br/><br/>';
@@ -1118,6 +1206,7 @@ if (labor.length > 1) {
       }
 
       html += '</td></tr></table>';
+      rowCtx.row += 1;
     }
 
     return html;
@@ -1263,9 +1352,20 @@ if (labor.length > 1) {
   }
 
   function formatCurrency(amount) {
-    if (amount == '' || amount == null) return '';
-    if (String(amount).indexOf('$') != -1) return amount;
+    if (amount === '' || amount == null) return '';
+    if (String(amount).indexOf('$') !== -1) return amount;
     return '$ ' + parseFloat(amount).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
+
+  function colLetter(colNum) {
+    var temp = '';
+    var letter = '';
+    while (colNum > 0) {
+      temp = (colNum - 1) % 26;
+      letter = String.fromCharCode(temp + 65) + letter;
+      colNum = (colNum - temp - 1) / 26;
+    }
+    return letter;
   }
 
   function getEmployeeList() {
@@ -1296,7 +1396,6 @@ if (labor.length > 1) {
 
     dateStr = String(dateStr);
 
-    // Handle MM/DD/YYYY
     if (dateStr.indexOf('/') !== -1) {
       var parts = dateStr.split('/');
       if (parts.length === 3) {
@@ -1311,7 +1410,6 @@ if (labor.length > 1) {
       }
     }
 
-    // Fallback
     var dt = new Date(dateStr);
     if (!isNaN(dt)) {
       var months2 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
