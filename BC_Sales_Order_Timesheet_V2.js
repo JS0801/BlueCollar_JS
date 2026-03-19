@@ -7,7 +7,7 @@ define([
   'N/log',
   'N/file',
   'N/record',
-  './xlsx.bundle'
+  './js_lib'
 ], function (search, log, file, record, XLSX) {
 
   function onRequest(context) {
