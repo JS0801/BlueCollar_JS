@@ -425,7 +425,7 @@ define([
       soId: soId,
       client: salesorderRec.getText({ fieldId: 'entity' }) || '',
       customerRef: salesorderRec.getValue({ fieldId: 'otherrefnum' }) || '',
-      weekEnding: formatToDATE(salesorderRec.getText({ fieldId: 'trandate' })) || '',
+      weekEnding: formatToDATE(salesorderRec.getValue({ fieldId: 'trandate' })) || '',
       docNumber: salesorderRec.getValue({ fieldId: 'tranid' }) || '',
       description: salesorderRec.getValue({ fieldId: 'memo' }) || '',
       supervisor: salesorderRec.getText({ fieldId: 'custbody_client_supervisor' }) || '',
