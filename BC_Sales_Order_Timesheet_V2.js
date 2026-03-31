@@ -614,7 +614,7 @@ define([
         var dt = sortedDates[d];
         row.days.push({
           date: dt,
-          hours: emp.dateMap[dt].toFixed(2) || 0
+          hours: parseFloat(emp.dateMap[dt] || 0).toFixed(2)
         });
       }
 
