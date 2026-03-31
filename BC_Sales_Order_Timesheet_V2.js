@@ -3,12 +3,14 @@
  * @NScriptType Suitelet
  */
 define([
+  'N/ui/serverWidget',
   'N/search',
   'N/log',
   'N/file',
-  'N/record',
-  './js_lib'
-], function (search, log, file, record, XLSX) {
+  'N/encode',
+  'N/runtime',
+  'N/record'
+], function (ui, search, log, file, encode, runtime, record) {
 
   function onRequest(context) {
     try {
@@ -19,34 +21,35 @@ define([
       var exportType = params.export || '';
 
       var tranIds = normalizeTranIds(tranid);
-      if (!tranIds.length) {
+      log.debug('Normalized tranIds', tranIds);
+
+      if (!tranIds || !tranIds.length) {
         context.response.write('No tranid provided.');
         return;
       }
 
       var empNameArr = getEmployeeList();
+
+      // 1) Consolidated draft invoice data for ALL tranids together
       var invoiceData = buildConsolidatedInvoiceData(tranIds);
 
+      // 2) Timesheet data PER tranid
       var timesheetDataByTran = [];
       for (var i = 0; i < tranIds.length; i++) {
         timesheetDataByTran.push(buildTimesheetData(tranIds[i], empNameArr));
       }
 
-      if (exportType === 'excel' || exportType === 'xlsx') {
-        var wb = buildWorkbook(invoiceData, timesheetDataByTran);
-        var base64 = XLSX.write(wb, {
-          type: 'base64',
-          bookType: 'xlsx'
+      if (exportType === 'excel') {
+        var html = buildExcelHtml(invoiceData, timesheetDataByTran);
+
+        var excelFile = file.create({
+          name: 'Weekly_Timesheet_' + new Date().toISOString().slice(0, 10) + '.xls',
+          fileType: file.Type.PLAINTEXT,
+          contents: html,
+          encoding: file.Encoding.UTF_8
         });
 
-        var outFile = file.create({
-          name: 'Weekly_Timesheet_' + new Date().toISOString().slice(0, 10) + '.xlsx',
-          fileType: file.Type.EXCEL,
-          contents: base64,
-          encoding: file.Encoding.BASE_64
-        });
-
-        context.response.writeFile(outFile, false);
+        context.response.writeFile(excelFile, false);
         return;
       }
 
@@ -55,610 +58,21 @@ define([
         timesheets: timesheetDataByTran
       };
 
-      context.response.writeLine("<#assign ObjDetail=" + JSON.stringify(responseObj) + " />");
+      var strReturn = "<#assign ObjDetail=" + JSON.stringify(responseObj) + " />";
+      context.response.writeLine(strReturn);
 
     } catch (e) {
-      log.error('Suitelet Error', e);
+      log.error('Error running Suitelet', e);
       context.response.write('Error: ' + e.message);
     }
   }
 
   // --------------------------------------------------------------------------
-  // WORKBOOK BUILD
-  // --------------------------------------------------------------------------
-  function buildWorkbook(invoiceData, timesheetDataByTran) {
-    var wb = XLSX.utils.book_new();
-    var sheet = createSheetBuilder('Weekly Timesheet');
-
-    addInvoiceSection(sheet, invoiceData);
-    sheet.blankRow(2);
-
-    for (var i = 0; i < timesheetDataByTran.length; i++) {
-      addTimesheetSection(sheet, timesheetDataByTran[i]);
-
-      if (i !== timesheetDataByTran.length - 1) {
-        sheet.blankRow(2);
-        sheet.mergeRowValue(sheet.row, 1, 17, '', styles.blackDivider);
-        sheet.nextRow();
-        sheet.blankRow(2);
-      }
-    }
-
-    var ws = sheet.toWorksheet();
-
-    ws['!cols'] = [
-      { wch: 16 }, { wch: 16 }, { wch: 18 }, { wch: 18 }, { wch: 12 },
-      { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 },
-      { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 16 },
-      { wch: 18 }, { wch: 18 }
-    ];
-
-    XLSX.utils.book_append_sheet(wb, ws, 'Weekly Timesheet');
-    return wb;
-  }
-
-  function addInvoiceSection(sheet, invoiceData) {
-    var cats = Object.keys(invoiceData.catMap || {}).sort();
-
-    sheet.mergeRowValue(sheet.row, 1, 11, 'DRAFT INVOICE', styles.invoiceTitle);
-    sheet.mergeRowValue(sheet.row, 12, 16, '', styles.logoBox);
-    sheet.nextRow();
-
-    var metaStart = sheet.row;
-
-    sheet.mergeRowValue(sheet.row, 1, 5, 'ATTN:\n' + stripHtmlBreaks(invoiceData.billAddrHtml), styles.wrapBox);
-    sheet.mergeRowValue(sheet.row, 6, 11, 'Invoice Date:\n' + invoiceData.soDate, styles.wrapBox);
-    sheet.mergeRowValue(sheet.row, 12, 16, stripHtmlBreaks(invoiceData.subAddrHtml) + '\nABN: ' + invoiceData.subABN, styles.wrapBox);
-    sheet.nextRow();
-
-    sheet.mergeRowValue(sheet.row, 6, 11, 'Invoice Number:\nDRAFT', styles.wrapBox);
-    sheet.nextRow();
-
-    sheet.mergeRowValue(sheet.row, 6, 11, 'PO Number:\n' + invoiceData.poNumbers.join(', '), styles.wrapBox);
-    sheet.nextRow();
-
-    sheet.mergeRowValue(sheet.row, 6, 11, 'Customer Reference:\n' + invoiceData.projectRefs.join(', '), styles.wrapBox);
-    sheet.nextRow();
-
-    sheet.mergeRowValue(sheet.row, 1, 16, '', styles.noBorder);
-    sheet.nextRow();
-
-    sheet.mergeRowValue(sheet.row, 1, 16, 'Memo:\n' + invoiceData.memos.join(' | '), styles.wrapBox);
-    sheet.nextRow();
-
-    sheet.mergeRowValue(sheet.row, 1, 16, '', styles.noBorder);
-    sheet.nextRow();
-
-    var hdrRow = sheet.row;
-    sheet.mergeRowValue(hdrRow, 1, 8, 'Description', styles.tableHeaderLeft);
-    sheet.mergeRowValue(hdrRow, 9, 10, 'Price', styles.tableHeader);
-    sheet.mergeRowValue(hdrRow, 11, 12, invoiceData.isAmericas ? 'TAX' : 'GST', styles.tableHeader);
-    sheet.mergeRowValue(hdrRow, 13, 14, invoiceData.TAX_LABEL_AMT, styles.tableHeader);
-    sheet.mergeRowValue(hdrRow, 15, 16, 'Amount ' + invoiceData.currencyText, styles.tableHeader);
-    sheet.nextRow();
-
-    var detailStart = sheet.row;
-
-    for (var i = 0; i < cats.length; i++) {
-      var cat = cats[i];
-      var rowNum = sheet.row;
-      var amt = parseFloat(invoiceData.catMap[cat].amountSum || 0) || 0;
-      var txa = Math.abs(parseFloat(invoiceData.catMap[cat].taxAmtSum || 0) || 0);
-      var txr = parseFloat(invoiceData.catMap[cat].taxRateMax || 0) || 0;
-
-      sheet.mergeRowValue(rowNum, 1, 8, cat, styles.cellLeft);
-      sheet.mergeRowValue(rowNum, 9, 10, amt, styles.currency);
-      sheet.mergeRowValue(rowNum, 11, 12, txr / 100, styles.percent);
-      sheet.mergeRowValue(rowNum, 13, 14, txa, styles.currency);
-      sheet.mergeRowFormula(rowNum, 15, 16, '=I' + rowNum + '+M' + rowNum, styles.currency);
-      sheet.nextRow();
-    }
-
-    var detailEnd = sheet.row - 1;
-
-    sheet.mergeRowValue(sheet.row, 1, 16, '', styles.noBorder);
-    sheet.nextRow();
-
-    var subtotalRow = sheet.row;
-    sheet.mergeRowValue(subtotalRow, 1, 12, '', styles.noBorder);
-    sheet.mergeRowValue(subtotalRow, 13, 14, 'Subtotal', styles.labelRight);
-    sheet.mergeRowFormula(subtotalRow, 15, 16, '=SUM(I' + detailStart + ':I' + detailEnd + ')', styles.currency);
-    sheet.nextRow();
-
-    var gstRow = sheet.row;
-    sheet.mergeRowValue(gstRow, 1, 12, '', styles.noBorder);
-    sheet.mergeRowValue(gstRow, 13, 14, invoiceData.TAX_LABEL_TOTAL, styles.labelRight);
-    sheet.mergeRowFormula(gstRow, 15, 16, '=SUM(M' + detailStart + ':M' + detailEnd + ')', styles.currency);
-    sheet.nextRow();
-
-    var totalRow = sheet.row;
-    sheet.mergeRowValue(totalRow, 1, 12, '', styles.noBorder);
-    sheet.mergeRowValue(totalRow, 13, 14, 'TOTAL ' + invoiceData.currencyText, styles.totalLabel);
-    sheet.mergeRowFormula(totalRow, 15, 16, '=O' + subtotalRow + '+O' + gstRow, styles.totalCurrency);
-    sheet.nextRow();
-
-    sheet.mergeRowValue(sheet.row, 1, 16, '', styles.noBorder);
-    sheet.nextRow();
-
-    var bankInfo =
-      'Sales Orders: ' + invoiceData.soNumbers.join(', ') + '\n\n' +
-      'Customer: ' + invoiceData.customerNames.join(', ') + '\n\n' +
-      'Due Date: ' + stripHtmlBreaks(invoiceData.dueDate) + '\n\n' +
-      'Payment Terms: ' + stripHtmlBreaks(invoiceData.terms) + '\n\n' +
-      'Please email remittance advice to ' + invoiceData.remitEmail + '\n\n' +
-      'BANK ACCOUNT DETAILS\n' +
-      'Account Name: ' + invoiceData.acctName + '\n' +
-      'Bank: ' + invoiceData.bankName + '\n' +
-      'BSB: ' + invoiceData.bsb + '\n' +
-      'Account: ' + invoiceData.acctNum;
-
-    sheet.mergeRowValue(sheet.row, 1, 16, bankInfo, styles.wrapBox);
-    sheet.nextRow();
-  }
-
-  function addTimesheetSection(sheet, ts) {
-    var x = ts.groupedData || {};
-    var h = ts.headerInfo || {};
-    var laborKey = x.Labour ? 'Labour' : 'Labor';
-    var labelLabor = ts.replaceLabor ? 'Labour' : 'Labor';
-
-    sheet.mergeRowValue(sheet.row, 1, 4, '', styles.logoBox);
-    sheet.mergeRowValue(sheet.row, 5, 17, 'Weekly Timesheet - ' + h.docNumber, styles.sectionTitle);
-    sheet.nextRow();
-    sheet.blankRow(1);
-
-    var leftInfo = [
-      ['Client:', h.client],
-      ['Customer Ref #:', h.customerRef],
-      ['Week-Ending:', formatDateMMDDYYYY(h.weekEnding)],
-      ['C2O Project Manager:', h.projectManager],
-      ['Description of Work:', h.description],
-      ['Document #:', h.docNumber]
-    ];
-
-    var rightInfo = [
-      ['Project:', h.reportingProject],
-      ['C2O Job:', h.projectName],
-      ['Supervisor:', h.supervisor],
-      ['Start Time: Monday – Friday', h.startTime, 'Finish Time:', h.endTime],
-      ['Start Time: Weekend / Holiday', h.startTime, 'Finish Time:', h.endTime]
-    ];
-
-    var maxInfoRows = Math.max(leftInfo.length, rightInfo.length);
-    for (var i = 0; i < maxInfoRows; i++) {
-      var rowNum = sheet.row;
-
-      if (leftInfo[i]) {
-        sheet.mergeRowValue(rowNum, 1, 2, leftInfo[i][0], styles.infoHeader);
-        sheet.mergeRowValue(rowNum, 3, 6, leftInfo[i][1], styles.infoValue);
-      }
-
-      sheet.mergeRowValue(rowNum, 7, 8, '', styles.noBorder);
-
-      if (rightInfo[i]) {
-        if (rightInfo[i].length === 2) {
-          sheet.mergeRowValue(rowNum, 9, 10, rightInfo[i][0], styles.infoHeader);
-          sheet.mergeRowValue(rowNum, 11, 16, rightInfo[i][1], styles.infoValue);
-        } else {
-          sheet.mergeRowValue(rowNum, 9, 10, rightInfo[i][0], styles.infoHeader);
-          sheet.setCell(rowNum, 11, rightInfo[i][1], styles.infoValue);
-          sheet.mergeRowValue(rowNum, 12, 13, rightInfo[i][2], styles.infoHeader);
-          sheet.setCell(rowNum, 14, rightInfo[i][3], styles.infoValue);
-        }
-      }
-
-      sheet.nextRow();
-    }
-
-    sheet.blankRow(2);
-
-    if (x[laborKey]) {
-      addLaborSection(sheet, x[laborKey], labelLabor);
-      sheet.blankRow(2);
-    }
-
-    if (x['Equipment / Vehicle Rental']) {
-      addEquipmentSection(sheet, x['Equipment / Vehicle Rental']);
-      sheet.blankRow(2);
-    }
-
-    if (x.Materials) {
-      addMaterialsSection(sheet, x.Materials);
-      sheet.blankRow(2);
-    }
-
-    if (x.Expenses) {
-      addExpensesSection(sheet, x.Expenses);
-      sheet.blankRow(2);
-    }
-
-    if (ts.legendArray && ts.legendArray.length) {
-      var legend = 'Time Type Legend: ';
-      for (var l = 0; l < ts.legendArray.length; l++) {
-        legend += ts.legendArray[l].abbr + ' - ' + ts.legendArray[l].label;
-        if (l !== ts.legendArray.length - 1) legend += ' | ';
-      }
-      sheet.mergeRowValue(sheet.row, 1, 17, legend, styles.legend);
-      sheet.nextRow();
-    }
-  }
-
-  function addLaborSection(sheet, labor, labelLabor) {
-    var dayCount = labor[0].days.length;
-    var startColDays = 7;
-    var endColDays = startColDays + dayCount - 1;
-    var totalWeekCol = endColDays + 1;
-    var rateCol = totalWeekCol + 1;
-    var claimCol = rateCol + 1;
-
-    sheet.mergeRowValue(sheet.row, 1, 6, labelLabor, styles.tableHeader);
-    sheet.mergeRowValue(sheet.row, 7, 17, 'ALL HOURS SHOWN ARE HOURS WORKED', styles.centerBox);
-    sheet.nextRow();
-
-    var row1 = sheet.row;
-    sheet.mergeRowValue(row1, 1, 2, 'Name', styles.tableHeader);
-    sheet.mergeRowValue(row1, 3, 4, 'Role', styles.tableHeader);
-    sheet.setCell(row1, 5, 'Time Type', styles.tableHeader);
-    sheet.setCell(row1, 6, 'Shift Type', styles.tableHeader);
-
-    var d;
-    for (d = 0; d < dayCount; d++) {
-      sheet.setCell(row1, startColDays + d, getDayName(labor[0].days[d].date), styles.tableHeader);
-    }
-    sheet.setCell(row1, totalWeekCol, 'Total Week', styles.tableHeader);
-    sheet.setCell(row1, rateCol, 'Rate', styles.tableHeader);
-    sheet.setCell(row1, claimCol, 'Claim Amount', styles.tableHeader);
-    sheet.nextRow();
-
-    var row2 = sheet.row;
-    for (d = 0; d < dayCount; d++) {
-      sheet.setCell(row2, startColDays + d, formatDateMMDDYYYY(labor[0].days[d].date), styles.tableHeaderDate);
-    }
-    sheet.nextRow();
-
-    var detailStart = sheet.row;
-
-    var i, j;
-    for (i = 1; i < labor.length - 1; i++) {
-      var r = sheet.row;
-
-      sheet.mergeRowValue(r, 1, 2, labor[i].employee, styles.cell);
-      sheet.mergeRowValue(r, 3, 4, labor[i].role, styles.cell);
-      sheet.setCell(r, 5, labor[i].shiftType, styles.cell);
-      sheet.setCell(r, 6, labor[i].shift, styles.cell);
-
-      for (j = 0; j < dayCount; j++) {
-        sheet.setCell(r, startColDays + j, parseFloat(labor[i].days[j].hours || 0), styles.decimal);
-      }
-
-      sheet.setFormula(r, totalWeekCol, '=SUM(' + colLetter(startColDays) + r + ':' + colLetter(endColDays) + r + ')', styles.decimal);
-      sheet.setCell(r, rateCol, parseFloat(labor[i].rate || 0), styles.currency);
-      sheet.setFormula(r, claimCol, '=ROUND(' + colLetter(totalWeekCol) + r + '*' + colLetter(rateCol) + r + ',2)', styles.currency);
-      sheet.mergeRowValue(r, claimCol + 1, 17, labor[i].notes || '', styles.cell);
-      sheet.nextRow();
-    }
-
-    var detailEnd = sheet.row - 1;
-    var totalRow = sheet.row;
-
-    sheet.mergeRowValue(totalRow, 1, 5, '', styles.noBorder);
-    sheet.setCell(totalRow, 6, 'TOTAL', styles.totalLabel);
-
-    for (j = 0; j < dayCount; j++) {
-      var c = startColDays + j;
-      sheet.setFormula(totalRow, c, '=SUM(' + colLetter(c) + detailStart + ':' + colLetter(c) + detailEnd + ')', styles.totalDecimal);
-    }
-
-    sheet.setFormula(totalRow, totalWeekCol, '=SUM(' + colLetter(totalWeekCol) + detailStart + ':' + colLetter(totalWeekCol) + detailEnd + ')', styles.totalDecimal);
-    sheet.setCell(totalRow, rateCol, '', styles.totalLabel);
-    sheet.setFormula(totalRow, claimCol, '=SUM(' + colLetter(claimCol) + detailStart + ':' + colLetter(claimCol) + detailEnd + ')', styles.totalCurrency);
-    sheet.nextRow();
-  }
-
-  function addEquipmentSection(sheet, rows) {
-    var dayCount = rows[0].days.length;
-    var dayStart = 5;
-    var dayEnd = dayStart + dayCount - 1;
-    var totalWeekCol = dayEnd + 1;
-
-    sheet.mergeRowValue(sheet.row, 1, 17, 'Equipment / Vehicle Rental', styles.tableHeader);
-    sheet.nextRow();
-
-    sheet.mergeRowValue(sheet.row, 1, 4, 'Role', styles.tableHeader);
-    for (var d = 0; d < dayCount; d++) {
-      sheet.setCell(sheet.row, dayStart + d, getDayName(rows[0].days[d].date), styles.tableHeader);
-    }
-    sheet.setCell(sheet.row, totalWeekCol, 'Total Week', styles.tableHeader);
-    sheet.mergeRowValue(sheet.row, totalWeekCol + 1, 17, 'Notes', styles.tableHeader);
-    sheet.nextRow();
-
-    for (var d2 = 0; d2 < dayCount; d2++) {
-      sheet.setCell(sheet.row, dayStart + d2, formatDateMMDDYYYY(rows[0].days[d2].date), styles.tableHeaderDate);
-    }
-    sheet.nextRow();
-
-    for (var i = 1; i < rows.length; i++) {
-      var r = sheet.row;
-      var isTotal = (i === rows.length - 1 && String(rows[i].employee || '').toUpperCase() === 'TOTAL');
-
-      sheet.mergeRowValue(r, 1, 4, rows[i].role, isTotal ? styles.totalLabel : styles.cell);
-      for (var j = 0; j < dayCount; j++) {
-        sheet.setCell(r, dayStart + j, parseFloat(rows[i].days[j].hours || 0), isTotal ? styles.totalDecimal : styles.decimal);
-      }
-
-      if (isTotal) {
-        sheet.setCell(r, totalWeekCol, parseFloat(rows[i].totalWeek || 0), styles.totalDecimal);
-      } else {
-        sheet.setFormula(r, totalWeekCol, '=SUM(' + colLetter(dayStart) + r + ':' + colLetter(dayEnd) + r + ')', styles.decimal);
-      }
-
-      sheet.mergeRowValue(r, totalWeekCol + 1, 17, '', isTotal ? styles.totalLabel : styles.cell);
-      sheet.nextRow();
-    }
-  }
-
-  function addMaterialsSection(sheet, rows) {
-    sheet.mergeRowValue(sheet.row, 1, 17, 'Materials', styles.tableHeader);
-    sheet.nextRow();
-
-    sheet.mergeRowValue(sheet.row, 1, 2, 'Supplier Invoice #', styles.tableHeader);
-    sheet.mergeRowValue(sheet.row, 3, 5, 'Supplier', styles.tableHeader);
-    sheet.mergeRowValue(sheet.row, 6, 7, 'PO #', styles.tableHeader);
-    sheet.mergeRowValue(sheet.row, 8, 15, 'Description', styles.tableHeader);
-    sheet.setCell(sheet.row, 16, 'Total Cost excl. Tax', styles.tableHeader);
-    sheet.setCell(sheet.row, 17, 'Cost + Mark up', styles.tableHeader);
-    sheet.nextRow();
-
-    var start = sheet.row;
-
-    for (var i = 0; i < rows.length; i++) {
-      var r = sheet.row;
-      var m = rows[i];
-
-      if (m.documentNumber === 'TOTAL') {
-        sheet.mergeRowValue(r, 1, 15, 'Total', styles.totalLabelRight);
-        sheet.setFormula(r, 16, '=SUM(P' + start + ':P' + (r - 1) + ')', styles.totalCurrency);
-        sheet.setFormula(r, 17, '=SUM(Q' + start + ':Q' + (r - 1) + ')', styles.totalCurrency);
-      } else {
-        sheet.mergeRowValue(r, 1, 2, m.documentNumber, styles.cell);
-        sheet.mergeRowValue(r, 3, 5, m.mainName, styles.cell);
-        sheet.mergeRowValue(r, 6, 7, m.cleanedPO, styles.cell);
-        sheet.mergeRowValue(r, 8, 15, m.memo, styles.cell);
-        sheet.setCell(r, 16, parseFloat(m.cost || 0), styles.currency);
-        sheet.setCell(r, 17, parseFloat(m.amount || 0), styles.currency);
-      }
-      sheet.nextRow();
-    }
-  }
-
-  function addExpensesSection(sheet, rows) {
-    sheet.mergeRowValue(sheet.row, 1, 17, 'Expenses', styles.tableHeader);
-    sheet.nextRow();
-
-    sheet.mergeRowValue(sheet.row, 1, 5, 'Expense Category', styles.tableHeader);
-    sheet.mergeRowValue(sheet.row, 6, 7, 'PO #', styles.tableHeader);
-    sheet.mergeRowValue(sheet.row, 8, 15, 'Description', styles.tableHeader);
-    sheet.setCell(sheet.row, 16, 'Total Cost excl. Tax', styles.tableHeader);
-    sheet.setCell(sheet.row, 17, 'Cost + Mark up', styles.tableHeader);
-    sheet.nextRow();
-
-    var start = sheet.row;
-
-    for (var i = 0; i < rows.length; i++) {
-      var r = sheet.row;
-      var e = rows[i];
-
-      if (e.documentNumber === 'TOTAL') {
-        sheet.mergeRowValue(r, 1, 15, 'Total', styles.totalLabelRight);
-        sheet.setFormula(r, 16, '=SUM(P' + start + ':P' + (r - 1) + ')', styles.totalCurrency);
-        sheet.setFormula(r, 17, '=SUM(Q' + start + ':Q' + (r - 1) + ')', styles.totalCurrency);
-      } else {
-        sheet.mergeRowValue(r, 1, 5, e.expCat, styles.cell);
-        sheet.mergeRowValue(r, 6, 7, e.cleanedPO, styles.cell);
-        sheet.mergeRowValue(r, 8, 15, e.memo, styles.cell);
-        sheet.setCell(r, 16, parseFloat(e.cost || 0), styles.currency);
-        sheet.setCell(r, 17, parseFloat(e.amount || 0), styles.currency);
-      }
-      sheet.nextRow();
-    }
-  }
-
-  // --------------------------------------------------------------------------
-  // SHEET BUILDER
-  // --------------------------------------------------------------------------
-  function createSheetBuilder(name) {
-    return {
-      name: name,
-      row: 1,
-      cells: {},
-      merges: [],
-      rowsMeta: {},
-
-      setCell: function (r, c, v, s, t) {
-        var ref = colLetter(c) + r;
-        var cell = { v: v, s: s || styles.cell };
-        if (t) {
-          cell.t = t;
-        } else {
-          cell.t = inferType(v);
-        }
-        this.cells[ref] = cell;
-      },
-
-      setFormula: function (r, c, formula, s) {
-        var ref = colLetter(c) + r;
-        this.cells[ref] = { f: stripEqual(formula), s: s || styles.currency };
-      },
-
-      merge: function (r1, c1, r2, c2) {
-        this.merges.push({
-          s: { r: r1 - 1, c: c1 - 1 },
-          e: { r: r2 - 1, c: c2 - 1 }
-        });
-      },
-
-      mergeRowValue: function (r, c1, c2, v, s) {
-        this.setCell(r, c1, v, s);
-        if (c2 > c1) this.merge(r, c1, r, c2);
-      },
-
-      mergeRowFormula: function (r, c1, c2, formula, s) {
-        this.setFormula(r, c1, formula, s);
-        if (c2 > c1) this.merge(r, c1, r, c2);
-      },
-
-      nextRow: function () {
-        this.row++;
-      },
-
-      blankRow: function (count) {
-        count = count || 1;
-        this.row += count;
-      },
-
-      toWorksheet: function () {
-        var ws = {};
-        var refs = Object.keys(this.cells);
-        for (var i = 0; i < refs.length; i++) {
-          ws[refs[i]] = this.cells[refs[i]];
-        }
-        ws['!merges'] = this.merges;
-        ws['!ref'] = buildRefFromCells(this.cells);
-        return ws;
-      }
-    };
-  }
-
-  // --------------------------------------------------------------------------
-  // STYLES
-  // --------------------------------------------------------------------------
-  var styles = {
-    invoiceTitle: {
-      font: { bold: true, sz: 24 },
-      alignment: { horizontal: 'left', vertical: 'center' },
-      border: fullBorder()
-    },
-    sectionTitle: {
-      font: { bold: true, sz: 20 },
-      alignment: { horizontal: 'center', vertical: 'center' },
-      border: fullBorder()
-    },
-    logoBox: {
-      border: fullBorder(),
-      alignment: { horizontal: 'center', vertical: 'center' }
-    },
-    blackDivider: {
-      fill: { fgColor: { rgb: '000000' } },
-      border: fullBorder()
-    },
-    tableHeader: {
-      font: { bold: true, color: { rgb: 'FFFFFF' } },
-      fill: { fgColor: { rgb: '3A4B87' } },
-      alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
-      border: fullBorder()
-    },
-    tableHeaderLeft: {
-      font: { bold: true, color: { rgb: 'FFFFFF' } },
-      fill: { fgColor: { rgb: '3A4B87' } },
-      alignment: { horizontal: 'left', vertical: 'center', wrapText: true },
-      border: fullBorder()
-    },
-    tableHeaderDate: {
-      font: { bold: true, color: { rgb: 'FFFFFF' } },
-      fill: { fgColor: { rgb: '3A4B87' } },
-      alignment: { horizontal: 'center', vertical: 'center' },
-      border: fullBorder(),
-      numFmt: 'dd-mmm-yyyy'
-    },
-    infoHeader: {
-      font: { bold: true, color: { rgb: 'FFFFFF' } },
-      fill: { fgColor: { rgb: '00A3E0' } },
-      alignment: { horizontal: 'left', vertical: 'center', wrapText: true },
-      border: fullBorder()
-    },
-    infoValue: {
-      alignment: { horizontal: 'left', vertical: 'center', wrapText: true },
-      border: fullBorder()
-    },
-    wrapBox: {
-      alignment: { horizontal: 'left', vertical: 'top', wrapText: true },
-      border: fullBorder()
-    },
-    centerBox: {
-      alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
-      border: fullBorder()
-    },
-    cell: {
-      alignment: { horizontal: 'left', vertical: 'center', wrapText: true },
-      border: fullBorder()
-    },
-    cellLeft: {
-      alignment: { horizontal: 'left', vertical: 'center' },
-      border: fullBorder()
-    },
-    decimal: {
-      alignment: { horizontal: 'right', vertical: 'center' },
-      border: fullBorder(),
-      numFmt: '0.0'
-    },
-    percent: {
-      alignment: { horizontal: 'right', vertical: 'center' },
-      border: fullBorder(),
-      numFmt: '0.00%'
-    },
-    currency: {
-      alignment: { horizontal: 'right', vertical: 'center' },
-      border: fullBorder(),
-      numFmt: '$#,##0.00'
-    },
-    labelRight: {
-      font: { bold: true },
-      alignment: { horizontal: 'right', vertical: 'center' },
-      border: fullBorder()
-    },
-    totalLabel: {
-      font: { bold: true, color: { rgb: 'FFFFFF' } },
-      fill: { fgColor: { rgb: '3A4B87' } },
-      alignment: { horizontal: 'right', vertical: 'center' },
-      border: fullBorder()
-    },
-    totalLabelRight: {
-      font: { bold: true, color: { rgb: 'FFFFFF' } },
-      fill: { fgColor: { rgb: '3A4B87' } },
-      alignment: { horizontal: 'right', vertical: 'center' },
-      border: fullBorder()
-    },
-    totalCurrency: {
-      font: { bold: true, color: { rgb: 'FFFFFF' } },
-      fill: { fgColor: { rgb: '3A4B87' } },
-      alignment: { horizontal: 'right', vertical: 'center' },
-      border: fullBorder(),
-      numFmt: '$#,##0.00'
-    },
-    totalDecimal: {
-      font: { bold: true, color: { rgb: 'FFFFFF' } },
-      fill: { fgColor: { rgb: '3A4B87' } },
-      alignment: { horizontal: 'right', vertical: 'center' },
-      border: fullBorder(),
-      numFmt: '0.0'
-    },
-    noBorder: {
-      border: noBorder()
-    },
-    legend: {
-      font: { italic: true },
-      alignment: { horizontal: 'left', vertical: 'center', wrapText: true },
-      border: {
-        top: { style: 'thin', color: { rgb: 'CCCCCC' } }
-      }
-    }
-  };
-
-  // --------------------------------------------------------------------------
-  // DATA BUILDERS
+  // NORMALIZE INPUT
   // --------------------------------------------------------------------------
   function normalizeTranIds(tranid) {
     if (!tranid) return [];
+
     var arr;
     if (Object.prototype.toString.call(tranid) === '[object Array]') {
       arr = tranid;
@@ -670,14 +84,20 @@ define([
     var unique = [];
     for (var i = 0; i < arr.length; i++) {
       var id = String(arr[i] || '').trim();
-      if (id && unique.indexOf(id) === -1) unique.push(id);
+      if (id && unique.indexOf(id) === -1) {
+        unique.push(id);
+      }
     }
     return unique;
   }
 
+  // --------------------------------------------------------------------------
+  // CONSOLIDATED DRAFT INVOICE
+  // --------------------------------------------------------------------------
   function buildConsolidatedInvoiceData(tranIds) {
     var firstSoId = tranIds[0];
     var firstSO = record.load({ type: record.Type.SALES_ORDER, id: firstSoId });
+
     var subId = firstSO.getValue({ fieldId: 'subsidiary' });
     var subrec = record.load({ type: 'subsidiary', id: subId });
 
@@ -685,6 +105,8 @@ define([
     var logoUrl = '';
     if (logo) {
       logoUrl = ('https://9873410-sb1.app.netsuite.com' + file.load({ id: logo }).url).replace(/&/g, '&amp;');
+    } else {
+      logoUrl = 'https://9873410-sb1.app.netsuite.com/core/media/media.nl?id=11486&amp;c=9873410_SB1&amp;h=1hbkOLk3U5GSjdY4GjdiGdKUZDkL4wsovPepc9ocNenvsfSW';
     }
 
     var soNumbers = [];
@@ -692,7 +114,6 @@ define([
     var projectRefs = [];
     var memos = [];
     var customerNames = [];
-
     var billAddrHtml = escBr(firstSO.getValue({ fieldId: 'billaddress' }) || '');
     var dueDate = esc(firstSO.getText({ fieldId: 'duedate' }) || firstSO.getValue({ fieldId: 'duedate' }) || '');
     var terms = esc(firstSO.getText({ fieldId: 'terms' }) || '');
@@ -701,11 +122,11 @@ define([
 
     var region = subrec.getText({ fieldId: 'custrecord_c2o_region' }) || subrec.getValue({ fieldId: 'custrecord_c2o_region' }) || '';
     var isAmericas = (region === 'C2O Americas');
-
     var TAX_LABEL_RATE = isAmericas ? 'TAX RATE' : 'GST RATE';
     var TAX_LABEL_AMT = isAmericas ? 'TAX AMT' : 'GST AMT';
     var TAX_LABEL_TOTAL = isAmericas ? 'TAX TOTAL' : 'GST TOTAL';
 
+    var subLegal = esc(subrec.getValue('legalname') || subrec.getValue('name') || '');
     var subAddrHtml = escBr(subrec.getValue('mainaddress_text') || '');
     var subABN = esc(subrec.getValue('federalidnumber') || '');
     var remitEmail = esc(subrec.getValue('custrecord_bc_remittance_email') || '');
@@ -728,15 +149,19 @@ define([
       var projText = so.getText({ fieldId: 'cseg_bc_project' }) || '';
       var lineCount = so.getLineCount({ sublistId: 'item' }) || 0;
 
-      if (soNum && soNumbers.indexOf(soNum) === -1) soNumbers.push(soNum);
-      if (otherRef && poNumbers.indexOf(otherRef) === -1) poNumbers.push(otherRef);
-      if (projText && projectRefs.indexOf(projText) === -1) projectRefs.push(projText);
-      if (entityText && customerNames.indexOf(entityText) === -1) customerNames.push(entityText);
-      if (memo && memos.indexOf(memo) === -1) memos.push(memo);
+      if (soNumbers.indexOf(soNum) === -1 && soNum) soNumbers.push(soNum);
+      if (poNumbers.indexOf(otherRef) === -1 && otherRef) poNumbers.push(otherRef);
+      if (projectRefs.indexOf(projText) === -1 && projText) projectRefs.push(projText);
+      if (customerNames.indexOf(entityText) === -1 && entityText) customerNames.push(entityText);
+      if (memos.indexOf(memo) === -1 && memo) memos.push(memo);
 
+      // detect AU from this SO subsidiary if needed
       try {
-        var countryTxt = subrec.getText({ fieldId: 'country' }) || subrec.getValue({ fieldId: 'country' }) || '';
-        if (countryTxt === 'Australia') replaceLabor = true;
+        var currentSubId = so.getValue({ fieldId: 'subsidiary' });
+        if (String(currentSubId) === String(subId)) {
+          var countryTxt = subrec.getText({ fieldId: 'country' }) || subrec.getValue({ fieldId: 'country' }) || '';
+          if (countryTxt === 'Australia') replaceLabor = true;
+        }
       } catch (e1) {}
 
       for (var i = 0; i < lineCount; i++) {
@@ -746,6 +171,9 @@ define([
         if (!categoryId || (!relatedTimeId && !relatedTranId)) continue;
 
         var lineAmt = parseFloat(so.getSublistValue({ sublistId: 'item', fieldId: 'amount', line: i }) || 0) || 0;
+        var qtyVal = so.getSublistValue({ sublistId: 'item', fieldId: 'quantity', line: i });
+        if (!lineAmt && (!qtyVal || qtyVal === 0 || qtyVal === '0')) continue;
+
         var taxRateVal = parseFloat(so.getSublistValue({ sublistId: 'item', fieldId: 'taxrate1', line: i }) || 0) || 0;
         var taxAmtVal = parseFloat(so.getSublistValue({ sublistId: 'item', fieldId: 'tax1amt', line: i }) || 0) || 0;
 
@@ -759,43 +187,183 @@ define([
 
         catMap[categoryId].amountSum += lineAmt;
         catMap[categoryId].taxAmtSum += taxAmtVal;
-        if (taxRateVal > catMap[categoryId].taxRateMax) catMap[categoryId].taxRateMax = taxRateVal;
+
+        if (taxRateVal > catMap[categoryId].taxRateMax) {
+          catMap[categoryId].taxRateMax = taxRateVal;
+        }
       }
     }
+
+    var rowsHtml = '';
+    var subTotalExTax = 0;
+    var totalTax = 0;
+    var categories = Object.keys(catMap).sort();
+
+    for (var c = 0; c < categories.length; c++) {
+      var cat = categories[c];
+      var amt = catMap[cat].amountSum;
+      var txa = catMap[cat].taxAmtSum;
+      var txr = catMap[cat].taxRateMax;
+
+      subTotalExTax += amt;
+      totalTax += txa;
+
+      rowsHtml += ''
+        + '<tr>'
+        + '<td colspan="8" style="border-right:0px; border-top:0px; border-bottom: 1px solid #C9C9C9;" >' + esc(cat) + '</td>'
+        + '<td colspan="2" style="border-right:0px;  border-top:0px; border-left:0px; border-bottom: 1px solid #C9C9C9;" align="right">' + money(amt) + '</td>'
+        + '<td colspan="2" style="border-right:0px;  border-top:0px; border-left:0px; border-bottom: 1px solid #C9C9C9;" align="center">' + pct(txr) + '</td>'
+        + '<td colspan="2" style="border-right:0px;  border-top:0px; border-left:0px; border-bottom: 1px solid #C9C9C9;" align="right">' + money(Math.abs(txa)) + '</td>'
+        + '<td colspan="2" style="border-left:0px;  border-top:0px; border-bottom: 1px solid #C9C9C9;" align="right">' + money(amt + txa) + '</td>'
+        + '</tr>';
+    }
+
+    var grandTotal = subTotalExTax + Math.abs(totalTax);
+
+    // var invoiceBlockHtml = ''
+    //   + '<table style="width:100%; border-collapse:collapse; font-family:Arial; border:1px solid #000;">'
+    //   + '<tr>'
+    //   + '<td colspan="12" rowspan="7" style="font-size:30pt; vertical-align:middle; font-weight:bold;">DRAFT INVOICE</td>'
+    //   + '<td colspan="4" rowspan="7" align="right" style="vertical-align:middle; font-weight:bold;"><img src="' + logoUrl + '" height="100" /></td>'
+    //   + '</tr>'
+    //   + '</table>'
+
+    //   + '<table style="width:100%; border-collapse:collapse; font-family:Arial; font-size:10pt; border:1px solid #000;">'
+    //   + '<tr>'
+    //   + '<td colspan="5" rowspan="4" valign="top">'
+    //   + '<b>ATTN:</b><br/>'
+    //   + billAddrHtml
+    //   + '</td>'
+    //   + '<td colspan="6" valign="top"><b>Invoice Date:</b><br/>' + soDate + '</td>'
+    //   + '<td colspan="5" rowspan="4" align="right" valign="top">'
+    //   + subAddrHtml + '<br/>'
+    //   + '<b>ABN:</b> ' + subABN
+    //   + '</td>'
+    //   + '</tr>'
+
+    //   + '<tr><td colspan="6" valign="top"><b>Invoice Number:</b><br/>DRAFT</td></tr>'
+    //   + '<tr><td colspan="6" valign="top"><b>PO Number:</b><br/>' + esc(poNumbers.join(', ')) + '</td></tr>'
+    //   + '<tr><td colspan="6" valign="top"><b>Customer Reference:</b><br/>' + esc(projectRefs.join(', ')) + '</td></tr>'
+
+    //   + '<tr><td colspan="16">&nbsp;</td></tr>'
+    //   + '<tr><td colspan="16"><b>Memo:</b><br/>' + esc(memos.join(' | ')) + '</td></tr>'
+    //   + '<tr><td colspan="16">&nbsp;</td></tr>'
+
+    //   + '<tr style="border-bottom:1px solid #000;">'
+    //   + '<th class="table-header" colspan="8"><b>Description</b></th>'
+    //   + '<th class="table-header" colspan="2" align="right"><b>Price</b></th>'
+    //   + '<th class="table-header" colspan="2" align="center"><b>' + (isAmericas ? 'TAX' : 'GST') + '</b></th>'
+    //   + '<th class="table-header" colspan="2" align="right"><b>' + TAX_LABEL_AMT + '</b></th>'
+    //   + '<th class="table-header" colspan="2" align="right"><b>Amount ' + currencyText + '</b></th>'
+    //   + '</tr>'
+
+    //   + rowsHtml
+
+    //   + '<tr><td colspan="10">&nbsp;</td></tr>'
+    //   + '<tr><td rowspan = "3" colspan="12"></td><td colspan="2" align="right">Subtotal</td><td colspan="2" align="right">' + money(subTotalExTax) + '</td></tr>'
+    //   + '<tr><td colspan="2" align="right">' + TAX_LABEL_TOTAL + '</td><td colspan="2" align="right">' + money(Math.abs(totalTax)) + '</td></tr>'
+    //   + '<tr><td colspan="2" align="right" style="border-top:1px solid #000;"><b>TOTAL ' + currencyText + '</b></td><td colspan="2" align="right" style="border-top:1px solid #000;"><b>' + money(grandTotal) + '</b></td></tr>'
+
+    //   + '<tr><td colspan="16">&nbsp;</td></tr>'
+    //   + '<tr><td colspan="16">'
+    //   + '<b>Sales Orders:</b> ' + esc(soNumbers.join(', ')) + '<br/><br/>'
+    //   + '<b>Customer:</b> ' + esc(customerNames.join(', ')) + '<br/><br/>'
+    //   + '<b>Due Date:</b> ' + dueDate + '<br/><br/>'
+    //   + '<b>Payment Terms:</b> ' + terms + '<br/><br/>'
+    //   + 'Please email remittance advice to ' + remitEmail + '<br/><br/>'
+    //   + '<b>BANK ACCOUNT DETAILS</b><br/>'
+    //   + 'Account Name: ' + acctName + '<br/>'
+    //   + 'Bank: ' + bankName + '<br/>'
+    //   + 'BSB: ' + bsb + '<br/>'
+    //   + 'Account: ' + acctNum
+    //   + '</td></tr>'
+    //   + '</table>';
+
+
+    var invoiceBlockHtml = ''
+  + '<table style="width:100%; border-collapse:collapse; font-family:Arial; border:1px solid #000; border-bottom:0px solid #000;">'
+  + '<tr>'
+  + '<td colspan="11" rowspan="7" style="font-size:30pt; vertical-align:middle; font-weight:bold; border:none;">DRAFT INVOICE</td>'
+  + '<td colspan="5" rowspan="7" align="right" style="vertical-align:middle; font-weight:bold; border:none;"><img src="' + logoUrl + '" height="100" /></td>'
+  + '</tr>'
+  + '</table>'
+
+  + '<table style="width:100%; border-collapse:collapse; font-family:Arial; font-size:10pt; border:1px solid #000; border-top:0px solid #000;">'
+  + '<tr>'
+  + '<td colspan="5" rowspan="4" valign="top" style="border:none;">'
+  + '<b>ATTN:</b><br/>'
+  + billAddrHtml
+  + '</td>'
+  + '<td colspan="6" valign="top" style="border:none;"><b>Invoice Date:</b><br/>' + soDate + '</td>'
+  + '<td colspan="5" rowspan="4" align="right" valign="top" style="border:none;">'
+  + subAddrHtml + '<br/>'
+  + '<b>ABN:</b> ' + subABN
+  + '</td>'
+  + '</tr>'
+
+  + '<tr><td colspan="6" valign="top" style="border:none;"><b>Invoice Number:</b><br/>DRAFT</td></tr>'
+  + '<tr><td colspan="6" valign="top" style="border:none;"><b>PO Number:</b><br/>' + esc(poNumbers.join(', ')) + '</td></tr>'
+  + '<tr><td colspan="6" valign="top" style="border:none;"><b>Customer Reference:</b><br/>' + esc(projectRefs.join(', ')) + '</td></tr>'
+
+  + '<tr><td colspan="16" style="border:none;">&nbsp;</td></tr>'
+  + '<tr><td colspan="16" style="border:none;"><b>Memo:</b><br/>' + esc(memos.join(' | ')) + '</td></tr>'
+  + '<tr><td colspan="16" style="border:none;">&nbsp;</td></tr>'
+
+  + '<tr>'
+  + '<th  colspan="8" align="left"   style="border-top:0px; border-right:0px; border-bottom: 1px;"><b>Description</b></th>'
+  + '<th  colspan="2" align="right"  style="border-top:0px; border-right:0px; border-left:0px; border-bottom: 1px;"><b>Price</b></th>'
+  + '<th  colspan="2" align="center" style="border-top:0px; border-right:0px; border-left:0px; border-bottom: 1px;"><b>' + (isAmericas ? 'TAX' : 'GST') + '</b></th>'
+  + '<th  colspan="2" align="right"  style="border-top:0px; border-right:0px; border-left:0px; border-bottom: 1px;"><b>' + TAX_LABEL_AMT + '</b></th>'
+  + '<th  colspan="2" align="right"  style="border-top:0px; border-left:0px; border-bottom: 1px;"><b>Amount ' + currencyText + '</b></th>'
+  + '</tr>'
+
+  + rowsHtml
+
+  + '<tr><td colspan="10" style="border:none;">&nbsp;</td></tr>'
+  + '<tr><td rowspan="3" colspan="12" style="border:none;"></td><td colspan="2" align="right" style="border:none;">Subtotal</td><td colspan="2" align="right" style="border:none;">' + money(subTotalExTax) + '</td></tr>'
+  + '<tr><td colspan="2" align="right" style="border:none;">' + TAX_LABEL_TOTAL + '</td><td colspan="2" align="right" style="border:none;">' + money(Math.abs(totalTax)) + '</td></tr>'
+  + '<tr><td colspan="2" align="right" style="border-top:1px; border-left:0px; border-right:0px; border-bottom: 0px;"><b>TOTAL ' + currencyText + '</b></td><td colspan="2" align="right" style="border-top:1px; border-right:0px; border-left:0px; border-bottom: 0px;"><b>' + money(grandTotal) + '</b></td></tr>'
+
+  + '<tr><td colspan="16" style="border:none;">&nbsp;</td></tr>'
+  + '<tr><td colspan="16" style="border:none;">'
+  + '<b>Sales Orders:</b> ' + esc(soNumbers.join(', ')) + '<br/><br/>'
+  + '<b>Customer:</b> ' + esc(customerNames.join(', ')) + '<br/><br/>'
+  + '<b>Due Date:</b> ' + dueDate + '<br/><br/>'
+  + '<b>Payment Terms:</b> ' + terms + '<br/><br/>'
+  + 'Please email remittance advice to ' + remitEmail + '<br/><br/>'
+  + '<b>BANK ACCOUNT DETAILS</b><br/>'
+  + 'Account Name: ' + acctName + '<br/>'
+  + 'Bank: ' + bankName + '<br/>'
+  + 'BSB: ' + bsb + '<br/>'
+  + 'Account: ' + acctNum
+  + '</td></tr>'
+  + '</table>';
 
     return {
       tranIds: tranIds,
       firstSoId: firstSoId,
       logoUrl: logoUrl,
       subId: subId,
+      rowsHtml: rowsHtml,
+      invoiceBlockHtml: invoiceBlockHtml,
       customerNames: customerNames,
       poNumbers: poNumbers,
       soNumbers: soNumbers,
       projectRefs: projectRefs,
       memos: memos,
-      replaceLabor: replaceLabor,
-      billAddrHtml: billAddrHtml,
-      dueDate: dueDate,
-      terms: terms,
-      currencyText: currencyText,
-      soDate: soDate,
-      isAmericas: isAmericas,
-      TAX_LABEL_RATE: TAX_LABEL_RATE,
-      TAX_LABEL_AMT: TAX_LABEL_AMT,
-      TAX_LABEL_TOTAL: TAX_LABEL_TOTAL,
-      subAddrHtml: subAddrHtml,
-      subABN: subABN,
-      remitEmail: remitEmail,
-      acctName: acctName,
-      bankName: bankName,
-      bsb: bsb,
-      acctNum: acctNum,
-      catMap: catMap
+      subTotalExTax: subTotalExTax,
+      totalTax: totalTax,
+      grandTotal: grandTotal,
+      replaceLabor: replaceLabor
     };
   }
 
+  // --------------------------------------------------------------------------
+  // TIMESHEET DATA BY SINGLE SO
+  // --------------------------------------------------------------------------
   function buildTimesheetData(soId, empNameArr) {
     var salesorderRec = record.load({ type: record.Type.SALES_ORDER, id: soId });
+
     var subId = salesorderRec.getValue({ fieldId: 'subsidiary' });
     var subrec = record.load({ type: 'subsidiary', id: subId });
 
@@ -803,6 +371,8 @@ define([
     var logoUrl = '';
     if (logo) {
       logoUrl = ('https://9873410-sb1.app.netsuite.com' + file.load({ id: logo }).url).replace(/&/g, '&amp;');
+    } else {
+      logoUrl = 'https://9873410-sb1.app.netsuite.com/core/media/media.nl?id=11486&amp;c=9873410_SB1&amp;h=1hbkOLk3U5GSjdY4GjdiGdKUZDkL4wsovPepc9ocNenvsfSW';
     }
 
     var replaceLabor = false;
@@ -818,7 +388,10 @@ define([
 
     if (projectId) {
       try {
-        var projectRec = record.load({ type: 'customrecord_cseg_bc_project', id: projectId });
+        var projectRec = record.load({
+          type: 'customrecord_cseg_bc_project',
+          id: projectId
+        });
         reportingProject = projectRec.getText({ fieldId: 'cseg_c2o_rep_proj' }) || '';
         projectManager = projectRec.getText({ fieldId: 'custrecord_bc_proj_manager' }) || '';
         projectName = projectRec.getText({ fieldId: 'name' }) || '';
@@ -844,9 +417,11 @@ define([
     };
 
     var groupedFinalArray = buildTimesheetHourGroups(soId, empNameArr, replaceLabor);
+    log.debug('groupedFinalArray', groupedFinalArray)
     groupedFinalArray = mergeTimesheetSourceTransactionGroups(soId, groupedFinalArray, replaceLabor);
+log.debug('groupedFinalArray', groupedFinalArray)
     var legendArray = buildLegendArray(groupedFinalArray, replaceLabor);
-
+log.debug('legendArray', legendArray)
     return {
       soId: soId,
       replaceLabor: replaceLabor,
@@ -857,8 +432,8 @@ define([
   }
 
   function buildTimesheetHourGroups(soId, empNameArr, replaceLabor) {
+    log.debug('soId', soId)
     var shiftSortOrder = ['ST', 'OT', 'OT1.5', 'DT', 'NT', 'RDO'];
-
     var salesorderSearchObj = search.create({
       type: 'salesorder',
       settings: [{ name: 'consolidationtype', value: 'NONE' }],
@@ -873,6 +448,7 @@ define([
         search.createColumn({ name: 'custcol_invoicing_category', summary: 'GROUP' }),
         search.createColumn({ name: 'employee', join: 'CUSTCOL_BC_TM_TIME_BILL', summary: 'GROUP' }),
         search.createColumn({ name: 'durationdecimal', join: 'CUSTCOL_BC_TM_TIME_BILL', summary: 'SUM' }),
+        search.createColumn({ name: 'item', join: 'CUSTCOL_BC_TM_TIME_BILL', summary: 'GROUP' }),
         search.createColumn({
           name: 'formulatext1',
           formula: "NVL(NVL(NVL({custcol_c2o_billing_class_override},{custcol_bc_tm_time_bill.custcol_bc_tm_labor_billing_class}), {custcol_bc_tm_source_transaction.memo}),'')",
@@ -882,11 +458,33 @@ define([
         search.createColumn({ name: 'custcol_bc_time_type', join: 'CUSTCOL_BC_TM_TIME_BILL', summary: 'GROUP' }),
         search.createColumn({ name: 'custcol_bc_tm_billing_shift', join: 'CUSTCOL_BC_TM_TIME_BILL', summary: 'GROUP' }),
         search.createColumn({ name: 'date', join: 'CUSTCOL_BC_TM_TIME_BILL', summary: 'GROUP', sort: search.Sort.ASC }),
-        search.createColumn({ name: 'memo', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' }),
-        search.createColumn({ name: 'trandate', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' }),
-        search.createColumn({ name: 'quantity', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'SUM' }),
-        search.createColumn({ name: 'rate', summary: 'MAX' }),
-        search.createColumn({ name: 'amount', summary: 'SUM' })
+        search.createColumn({
+          name: 'custcol_bc_tm_line_id',
+          summary: 'GROUP'
+        }),
+        search.createColumn({
+          name: 'memo',
+          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
+          summary: 'GROUP'
+        }),
+        search.createColumn({
+          name: 'trandate',
+          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
+          summary: 'GROUP'
+        }),
+        search.createColumn({
+          name: 'quantity',
+          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
+          summary: 'SUM'
+        }),
+        search.createColumn({
+          name: 'rate',
+          summary: 'MAX'
+        }),
+        search.createColumn({
+          name: 'amount',
+          summary: 'SUM'
+        })
       ]
     });
 
@@ -894,6 +492,7 @@ define([
     var uniqueDates = {};
 
     salesorderSearchObj.run().each(function (result) {
+      log.debug('result', result)
       var billRentalRole = result.getValue({ name: 'memo', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' });
       billRentalRole = (billRentalRole === '- None -' || !billRentalRole) ? '' : billRentalRole;
 
@@ -935,7 +534,10 @@ define([
       employeeMap[empKey].dateMap[dateStr] = hours.toFixed(1);
       employeeMap[empKey].totalWeek += hours;
       employeeMap[empKey].amt += amtTime;
-      if (note) employeeMap[empKey].notes += (employeeMap[empKey].notes ? ' | ' : '') + note;
+
+      if (note) {
+        employeeMap[empKey].notes += (employeeMap[empKey].notes ? ' | ' : '') + note;
+      }
 
       return true;
     });
@@ -947,7 +549,7 @@ define([
     var headerRow = {
       employee: 'Name',
       role: 'Role',
-      shiftType: 'Shift Type',
+      shiftType: 'Shift<br/>Type',
       shift: 'Shift',
       days: [],
       totalWeek: 'TOTAL WEEK',
@@ -1030,6 +632,7 @@ define([
       for (var td = 0; td < sortedDates.length; td++) {
         var date = sortedDates[td];
         var dateSum = 0;
+
         for (var sr = 0; sr < sortedGroup.length; sr++) {
           var rowData = sortedGroup[sr];
           for (var dy = 0; dy < rowData.days.length; dy++) {
@@ -1048,7 +651,10 @@ define([
       groupedFinalArray[group] = [header].concat(sortedGroup).concat([totalRow]);
     }
 
-    if (replaceLabor) groupedFinalArray = replaceLaborText(groupedFinalArray);
+    if (replaceLabor) {
+      groupedFinalArray = replaceLaborText(groupedFinalArray);
+    }
+
     return groupedFinalArray;
   }
 
@@ -1063,37 +669,118 @@ define([
         'AND',
         ['internalid', 'anyof', [soId]],
         'AND',
-        ['formulatext: case when {custcol_bc_tm_line_id} = {custcol_bc_tm_source_transaction.line} then 1 else 0 end', 'is', '1']
+        ["formulatext: case when {custcol_bc_tm_line_id} = {custcol_bc_tm_source_transaction.line} then 1 else 0 end", 'is', '1']
       ],
       columns: [
-        search.createColumn({ name: 'custcol_invoicing_category', summary: 'GROUP' }),
-        search.createColumn({ name: 'tranid', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' }),
-        search.createColumn({ name: 'mainname', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' }),
-        search.createColumn({ name: 'amount', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'MAX' }),
-        search.createColumn({ name: 'taxamount', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'MAX' }),
-        search.createColumn({ name: 'memo', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' }),
+        search.createColumn({
+          name: 'custcol_invoicing_category',
+          summary: 'GROUP'
+        }),
+        search.createColumn({
+          name: 'tranid',
+          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
+          summary: 'GROUP'
+        }),
+        search.createColumn({
+          name: 'mainname',
+          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
+          summary: 'GROUP'
+        }),
+        search.createColumn({
+          name: 'amount',
+          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
+          summary: 'MAX'
+        }),
+        search.createColumn({
+          name: 'taxamount',
+          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
+          summary: 'MAX'
+        }),
+        search.createColumn({
+          name: 'line',
+          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
+          summary: 'GROUP'
+        }),
+        search.createColumn({
+          name: 'memo',
+          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
+          summary: 'GROUP'
+        }),
         search.createColumn({
           name: 'formulatext',
           summary: 'MAX',
           formula: "CASE WHEN {custcol_bc_tm_source_transaction.appliedtotransaction} LIKE 'Purchase Order%' THEN TRIM(REPLACE({custcol_bc_tm_source_transaction.appliedtotransaction}, 'Purchase Order', '')) ELSE {custcol_bc_tm_source_transaction.tranid} END"
         }),
-        search.createColumn({ name: 'amount', summary: 'MAX' }),
-        search.createColumn({ name: 'expensecategory', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' })
+        search.createColumn({
+          name: 'custcol_bc_tm_line_id',
+          summary: 'GROUP'
+        }),
+        search.createColumn({
+          name: 'amount',
+          summary: 'MAX'
+        }),
+        search.createColumn({
+          name: 'expensecategory',
+          join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
+          summary: 'GROUP'
+        })
       ]
     });
 
     var tranFinalArray = {};
 
     transactionSearch.run().each(function (result) {
-      var invoicingCategory = result.getText({ name: 'custcol_invoicing_category', summary: 'GROUP' }) || 'Uncategorized';
-      var docNumber = result.getValue({ name: 'tranid', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' }) || '';
-      var mainName = result.getText({ name: 'mainname', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' }) || '';
-      var expCat = result.getText({ name: 'expensecategory', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' }) || '';
-      var cost = parseFloat(result.getValue({ name: 'amount', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'MAX' }) || 0) || 0;
-      var tax = parseFloat(result.getValue({ name: 'taxamount', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'MAX' }) || 0) || 0;
-      var amount = parseFloat(result.getValue({ name: 'amount', summary: 'MAX' }) || 0) || 0;
-      var memo = result.getValue({ name: 'memo', join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION', summary: 'GROUP' }) || '';
-      var cleanedPO = result.getValue({ name: 'formulatext', summary: 'MAX' }) || '';
+      
+      var invoicingCategory = result.getText({
+        name: 'custcol_invoicing_category',
+        summary: 'GROUP'
+      }) || 'Uncategorized';
+
+      var docNumber = result.getValue({
+        name: 'tranid',
+        join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
+        summary: 'GROUP'
+      }) || '';
+
+      var mainName = result.getText({
+        name: 'mainname',
+        join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
+        summary: 'GROUP'
+      }) || '';
+
+      var expCat = result.getText({
+        name: 'expensecategory',
+        join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
+        summary: 'GROUP'
+      }) || '';
+
+      var cost = parseFloat(result.getValue({
+        name: 'amount',
+        join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
+        summary: 'MAX'
+      }) || 0) || 0;
+
+      var tax = parseFloat(result.getValue({
+        name: 'taxamount',
+        join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
+        summary: 'MAX'
+      }) || 0) || 0;
+
+      var amount = parseFloat(result.getValue({
+        name: 'amount',
+        summary: 'MAX'
+      }) || 0) || 0;
+
+      var memo = result.getValue({
+        name: 'memo',
+        join: 'CUSTCOL_BC_TM_SOURCE_TRANSACTION',
+        summary: 'GROUP'
+      }) || '';
+
+      var cleanedPO = result.getValue({
+        name: 'formulatext',
+        summary: 'MAX'
+      }) || '';
 
       var row = {
         documentNumber: escPlain(docNumber),
@@ -1119,6 +806,7 @@ define([
       tranFinalArray[invoicingCategory].totalAmount += amount;
       tranFinalArray[invoicingCategory].totalCost += cost;
       tranFinalArray[invoicingCategory].totalTax += tax;
+
       return true;
     });
 
@@ -1127,14 +815,19 @@ define([
       var category = categories[i];
       var group = tranFinalArray[category];
 
+      var grpAmt = parseFloat(group.totalAmount || 0).toFixed(2);
+      var grpCost = parseFloat(group.totalCost || 0).toFixed(2);
+      var grpTax = Math.abs(parseFloat(group.totalTax || 0)).toFixed(2);
+      var grpTotal = (Math.abs(parseFloat(group.totalTax || 0)) + parseFloat(group.totalCost || 0)).toFixed(2);
+
       var totalRow = {
         documentNumber: 'TOTAL',
         mainName: '',
         expCat: '',
-        amount: formatCurrency(group.totalAmount || 0),
-        cost: formatCurrency(group.totalCost || 0),
-        tax: formatCurrency(Math.abs(group.totalTax || 0)),
-        total: formatCurrency((Math.abs(group.totalTax || 0)) + (group.totalCost || 0)),
+        amount: formatCurrency(grpAmt),
+        cost: formatCurrency(grpCost),
+        tax: formatCurrency(grpTax),
+        total: formatCurrency(grpTotal),
         memo: '',
         cleanedPO: ''
       };
@@ -1142,10 +835,297 @@ define([
       groupedFinalArray[category] = group.rows.concat([totalRow]);
     }
 
-    if (replaceLabor) groupedFinalArray = replaceLaborText(groupedFinalArray);
+    if (replaceLabor) {
+      groupedFinalArray = replaceLaborText(groupedFinalArray);
+    }
+
     return groupedFinalArray;
   }
 
+  // --------------------------------------------------------------------------
+  // EXCEL HTML
+  // --------------------------------------------------------------------------
+  function buildExcelHtml(invoiceData, timesheetDataByTran) {
+    var html = ''
+      + '<html xmlns:x="urn:schemas-microsoft-com:office:excel">'
+      + '<head>'
+      + '<meta charset="UTF-8">'
+      + '<style>'
+      + 'table { border-collapse: collapse; width: 100%; font-size: 10pt; table-layout: fixed; }'
+      + 'th, td { border: 1px solid black; padding: 5px; word-wrap: break-word; }'
+      + 'th { background-color: #3a4b87; color: white; font-weight: bold; }'
+      + '.section-label { background-color: #e3e3e3; font-weight: bold; padding: 6px; border: 1px solid #000; }'
+      + '.row-label { background-color: #3a4b87; color: white; font-weight: bold; }'
+      + '.info-header { background-color: #00a3e0; color: white; font-weight: bold; }'
+      + '.table-header { background-color: #3a4b87; color: white; font-weight: bold; }'
+      + '.sub-header { background-color: #00a3e0; color: white; font-weight: bold; }'
+      + '</style>'
+      + '</head>'
+      + '<body>';
+
+    // Consolidated draft invoice
+    html += '<div id="sheet1">';
+    html += invoiceData.invoiceBlockHtml;
+    html += '<br/><br/>';
+
+    html += '<table style="width:100%; border-collapse:collapse;">'
+      + '<tr><td colspan="20" style="background-color:#000; height:8px;"></td></tr>'
+      + '</table>'
+      + '<br/><br/>';
+
+    // Timesheet blocks by tranid
+    for (var i = 0; i < timesheetDataByTran.length; i++) {
+      html += buildTimesheetHtmlBlock(timesheetDataByTran[i]);
+
+      if (i !== timesheetDataByTran.length - 1) {
+        html += '<br/><br/><br/><table style="width:100%; border-collapse:collapse;"><tr><td colspan="20" style="background-color:#000; height:8px;"></td></tr></table><br/><br/><br/>';
+      }
+    }
+
+    html += '</div></body></html>';
+    return html;
+  }
+
+  function buildTimesheetHtmlBlock(ts) {
+    var x = ts.groupedData || {};
+    var h = ts.headerInfo || {};
+    var labelLabor = ts.replaceLabor ? 'Labour' : 'Labor';
+
+    var html = '';
+
+    html += ''
+      + '<table style="width:100%; border-collapse: collapse; font-size:10pt;">'
+      + '<tr>'
+      + '<td colspan="4" rowspan="7" style="padding:10px;">'
+      + '<img src="' + h.logoUrl + '" height="100" />'
+      + '</td>'
+      + '<td colspan="17" rowspan="7" style="font-size:26pt; font-weight:bold; text-align:center; vertical-align:middle;">Weekly Timesheet - ' + esc(h.docNumber) + '</td>'
+      + '</tr>'
+      + '</table>'
+      + '<br/><br/><br/>';
+
+    html += ''
+      + '<table style="width:100%; border-collapse:collapse; font-size:9pt; table-layout:fixed; margin-top:10px;">'
+      + '<tr>'
+      + '<td colspan="2" style="width:49%; vertical-align:top;">'
+      + '<table style="width:100%; border-collapse:collapse;">'
+      + '<tr><td class="info-header" colspan="2">Client:</td><td style="border:1px solid #000;" colspan="4">' + esc(h.client) + '</td></tr>'
+      + '<tr><td class="info-header" colspan="2">Customer Ref #:</td><td style="border:1px solid #000; " colspan="4">' + esc(h.customerRef) + '</td></tr>'
+      + '<tr><td class="info-header" colspan="2">Week-Ending:</td><td style="border:1px solid #000; mso-number-format:\\@;" colspan="4">' + formatDateMMDDYYYY(h.weekEnding) + '</td></tr>'
+      + '<tr><td class="info-header" colspan="2">C2O Project Manager:</td><td style="border:1px solid #000;" colspan="4">' + esc(h.projectManager) + '</td></tr>'
+      + '<tr><td class="info-header" colspan="2">Description of Work:</td><td style="border:1px solid #000;" colspan="4">' + esc(h.description) + '</td></tr>'
+      + '<tr><td class="info-header" colspan="2">Document #:</td><td style="border:1px solid #000;" colspan="4">' + esc(h.docNumber) + '</td></tr>'
+      + '</table>'
+      + '</td>'
+
+      + '<td style="width:2%; border:0px;" colspan="4"></td>'
+
+      + '<td colspan="2" style="width:49%; vertical-align:top;">'
+      + '<table style="width:100%; border-collapse:collapse;">'
+      + '<tr><td class="info-header" colspan="2">Project:</td><td colspan="4" style="border:1px solid #000;">' + esc(h.reportingProject) + '</td></tr>'
+      + '<tr><td class="info-header" colspan="2">C2O Job:</td><td colspan="4" style="border:1px solid #000;">' + esc(h.projectName) + '</td></tr>'
+      + '<tr><td class="info-header" colspan="2">Supervisor:</td><td colspan="4" style="border:1px solid #000;">' + esc(h.supervisor) + '</td></tr>'
+      + '<tr><td class="info-header" colspan="2">Start Time: Monday – Friday</td><td style="border:1px solid #000;">' + esc(h.startTime) + '</td><td class="info-header" colspan="2">Finish Time:</td><td style="border:1px solid #000;">' + esc(h.endTime) + '</td></tr>'
+      + '<tr><td class="info-header" colspan="2">Start Time: Weekend / Holiday</td><td style="border:1px solid #000;">' + esc(h.startTime) + '</td><td class="info-header" colspan="2">Finish Time:</td><td style="border:1px solid #000;">' + esc(h.endTime) + '</td></tr>'
+      + '</table>'
+      + '</td>'
+      + '</tr>'
+      + '</table>'
+      + '<br/><br/><br/>';
+    log.debug('LaborMap', x.Labor || x.Labour)
+    if (x.Labor || x.Labour) {
+      html += '<table>'
+        + '<tr>'
+        + '<th class="table-header" colspan="6">' + labelLabor + '</th>'
+        + '<td colspan="15" align="center" style="border-top:1px solid #000; border-bottom:1px solid #000; border-left:1px solid #000; border-right:1px solid #000;">ALL HOURS SHOWN ARE HOURS WORKED</td>'
+        + '</tr>'
+        + '<tr>'
+        + '<th class="table-header" colspan="2" rowspan="2">Name</th>'
+        + '<th class="table-header" colspan="2" rowspan="2">Role</th>'
+        + '<th class="table-header" rowspan="2">Time Type</th>'
+        + '<th class="table-header" rowspan="2">Shift Type</th>';
+
+      var labor = x.Labor || x.Labour;
+      for (var i1 = 0; i1 < labor[0].days.length; i1++) {
+        html += '<th class="table-header">' + getDayName(labor[0].days[i1].date) + '</th>';
+      }
+
+      html += '<th class="table-header" rowspan="2">Total Week</th>'
+        + '<th class="table-header" rowspan="2">Rate</th>'
+        + '<th class="table-header" rowspan="2">Claim Amount</th>'
+        + '<th class="table-header" rowspan="2" colspan="' + (12 - labor[0].days.length) + '">Notes</th>'
+        + '</tr>'
+        + '<tr>';
+
+      for (var i2 = 0; i2 < labor[0].days.length; i2++) {
+        html += '<th class="table-header" style="mso-number-format:\\@;">' + formatDateMMDDYYYY(labor[0].days[i2].date) + '</th>';
+      }
+
+      html += '</tr>';
+
+      for (var q = 1; q < labor.length - 1; q++) {
+  html += '<tr>'
+    + '<td colspan="2">' + labor[q].employee + '</td>'
+    + '<td colspan="2">' + labor[q].role + '</td>'
+    + '<td>' + labor[q].shiftType + '</td>'
+    + '<td>' + labor[q].shift + '</td>';
+
+  for (var w = 0; w < labor[q].days.length; w++) {
+    html += '<td>' + labor[q].days[w].hours + '</td>';
+  }
+
+  html += '<td>' + labor[q].totalWeek + '</td>'
+    + '<td>' + formatCurrency(labor[q].rate) + '</td>'
+    + '<td>' + formatCurrency(labor[q].amt) + '</td>'
+    + '<td colspan="' + (12 - labor[q].days.length) + '"></td>'
+    + '</tr>';
+}
+
+// last element separate
+if (labor.length > 1) {
+  var last = labor[labor.length - 1];
+
+  html += '<tr>'
+    + '<td colspan="5" style="border-left: 0; border-bottom: 0;"></td>'
+    + '<td class="table-header"><b>' + last.employee + '</b></td>';
+
+  for (var w = 0; w < last.days.length; w++) {
+    html += '<td class="table-header"><b>' + last.days[w].hours + '</b></td>';
+  }
+
+  html += '<td class="table-header"><b>' + last.totalWeek + '</b></td>'
+    + '<td class="table-header"><b>' + formatCurrency(last.rate) + '</b></td>'
+    + '<td class="table-header"><b>' + formatCurrency(last.amt) + '</b></td>'
+    + '</tr>';
+}
+      html += '</table>';
+    }
+
+    if (x['Equipment / Vehicle Rental']) {
+      var equp = x['Equipment / Vehicle Rental'];
+
+      html += '<br/><br/><br/><table>'
+        + '<tr><th colspan="8">Equipment / Vehicle Rental</th></tr>'
+        + '<tr>'
+        + '<th colspan="4" rowspan="2">Role</th>';
+
+      for (var e1 = 0; e1 < equp[0].days.length; e1++) {
+        html += '<th>' + getDayName(equp[0].days[e1].date) + '</th>';
+      }
+
+      html += '<th rowspan="2">Total Week</th>'
+        + '<th rowspan="2" colspan="' + (14 - equp[0].days.length) + '">Notes</th>'
+        + '</tr>'
+        + '<tr>';
+
+      for (var e2 = 0; e2 < equp[0].days.length; e2++) {
+        html += '<th style="mso-number-format:\\@;">' + formatDateMMDDYYYY(equp[0].days[e2].date) + '</th>';
+      }
+
+      html += '</tr>';
+
+      for (var r = 1; r < equp.length; r++) {
+        html += '<tr><td colspan="4">' + equp[r].role + '</td>';
+        for (var t = 0; t < equp[r].days.length; t++) {
+          html += '<td>' + equp[r].days[t].hours + '</td>';
+        }
+        html += '<td>' + equp[r].totalWeek + '</td>'
+          + '<td colspan="' + (14 - equp[r].days.length) + '"></td>'
+          + '</tr>';
+      }
+
+      html += '</table>';
+    }
+
+    if (x.Materials) {
+      html += '<br/><br/><br/><table>'
+        + '<tr><th class="table-header" colspan="5">Materials</th></tr>'
+        + '<tr>'
+        + '<th class="table-header" colspan="2">Supplier Invoice #</th>'
+        + '<th class="table-header" colspan="3">Supplier</th>'
+        + '<th class="table-header" colspan="2">PO #</th>'
+        + '<th class="table-header" colspan="8">Description</th>'
+        + '<th class="table-header">Total Cost excl. Tax</th>'
+        + '<th class="table-header">Cost + Mark up</th>'
+        + '</tr>';
+
+      for (var p = 0; p < x.Materials.length; p++) {
+        var m = x.Materials[p];
+        if (m.documentNumber === 'TOTAL') {
+          html += '<tr>'
+            + '<td colspan="13" style="border:0px solid #000;"></td>'
+            + '<td colspan="2" align="right" style="background-color:#3a4b87; color:white; font-weight:bold;">Total</td>'
+            + '<td align="right"></td>'
+            + '<td align="right" style="font-weight:bold;" >' + m.amount + '</td>'
+            + '</tr>';
+        } else {
+          html += '<tr>'
+            + '<td colspan="2">' + m.documentNumber + '</td>'
+            + '<td colspan="3">' + m.mainName + '</td>'
+            + '<td colspan="2">' + m.cleanedPO + '</td>'
+            + '<td colspan="8">' + m.memo + '</td>'
+            + '<td align="right">' + formatCurrency(m.cost) + '</td>'
+            + '<td align="right">' + formatCurrency(m.amount) + '</td>'
+            + '</tr>';
+        }
+      }
+
+      html += '</table>';
+    }
+
+    if (x.Expenses) {
+      html += '<br/><br/><br/><table>'
+        + '<tr><th class="table-header" colspan="5">Expenses</th></tr>'
+        + '<tr>'
+        + '<th class="table-header" colspan="5">Expense Category</th>'
+        + '<th class="table-header" colspan="2">PO #</th>'
+        + '<th class="table-header" colspan="8">Description</th>'
+        + '<th class="table-header">Total Cost excl. Tax</th>'
+        + '<th class="table-header">Cost + Mark up</th>'
+        + '</tr>';
+
+      for (var a = 0; a < x.Expenses.length; a++) {
+        var e = x.Expenses[a];
+        if (e.documentNumber === 'TOTAL') {
+          html += '<tr>'
+            + '<td colspan="5" style="border:0px solid #000; background-color:#3a4b87; color:white; font-weight:bold;">Total</td>'
+            + '<td colspan="10" align="right"></td>'
+            + '<td align="right" style="background-color:#3a4b87; color:white; font-weight:bold;">' + e.cost + '</td>'
+            + '<td align="right" style="background-color:#3a4b87; color:white; font-weight:bold;">' + e.amount + '</td>'
+            + '</tr>';
+        } else {
+          html += '<tr>'
+            + '<td colspan="5">' + e.expCat + '</td>'
+            + '<td colspan="2">' + e.cleanedPO + '</td>'
+            + '<td colspan="8">' + e.memo + '</td>'
+            + '<td align="right">' + formatCurrency(e.cost) + '</td>'
+            + '<td align="right">' + formatCurrency(e.amount) + '</td>'
+            + '</tr>';
+        }
+      }
+
+      html += '</table><br/><br/><br/><br/>';
+    }
+
+    if (ts.legendArray && ts.legendArray.length > 0) {
+      html += '<br/><br/><table style="width:100%; border-top:1px solid #ccc; border-collapse:collapse; font-size:9pt;"><tr><td colspan="15" style="padding-top:8px; padding-bottom:8px;"><strong>Time Type Legend:</strong>&nbsp;&nbsp;';
+
+      for (var lg = 0; lg < ts.legendArray.length; lg++) {
+        html += '<strong>' + ts.legendArray[lg].abbr + '</strong> – ' + ts.legendArray[lg].label;
+        if (lg < ts.legendArray.length - 1) {
+          html += '&nbsp;&nbsp;|&nbsp;&nbsp;';
+        }
+      }
+
+      html += '</td></tr></table>';
+    }
+
+    return html;
+  }
+
+  // --------------------------------------------------------------------------
+  // LEGEND + TEXT REPLACEMENT
+  // --------------------------------------------------------------------------
   function buildLegendArray(groupedFinalArray, replaceLabor) {
     var TIME_LEGEND_MAP = {
       'ST': 'Standard Time',
@@ -1166,19 +1146,23 @@ define([
     for (var i = 0; i < categories.length; i++) {
       var rows = groupedFinalArray[categories[i]];
       for (var r = 0; r < rows.length; r++) {
-        if (rows[r].shiftType) {
-          var cleanType = String(rows[r].shiftType).trim();
+        var row = rows[r];
+        if (row.shiftType && row.shiftType !== '') {
+          var cleanType = String(row.shiftType).replace(/<br\/>/g, '').trim();
           if (TIME_LEGEND_MAP[cleanType] && !seenTypes[cleanType]) {
             seenTypes[cleanType] = true;
-            legendArray.push({ abbr: cleanType, label: TIME_LEGEND_MAP[cleanType] });
+            legendArray.push({
+              abbr: cleanType,
+              label: TIME_LEGEND_MAP[cleanType]
+            });
           }
         }
       }
     }
 
-    var order = ['ST', 'OT', 'DT', 'PT', 'PTO', 'Per Diem', 'DR1', 'DR2', 'DR3'];
+    var LEGEND_ORDER = ['ST', 'OT', 'DT', 'PT', 'PTO', 'Per Diem', 'DR1', 'DR2', 'DR3'];
     legendArray.sort(function (a, b) {
-      return order.indexOf(a.abbr) - order.indexOf(b.abbr);
+      return LEGEND_ORDER.indexOf(a.abbr) - LEGEND_ORDER.indexOf(b.abbr);
     });
 
     if (replaceLabor) {
@@ -1216,26 +1200,6 @@ define([
     return newObj;
   }
 
-  function getEmployeeList() {
-    var returnObj = {};
-    var employeeSearchObj = search.create({
-      type: 'employee',
-      filters: [],
-      columns: [
-        search.createColumn({ name: 'internalid' }),
-        search.createColumn({ name: 'formulatext', formula: "{firstname} || ' ' || {lastname}" })
-      ]
-    });
-
-    employeeSearchObj.run().each(function (result) {
-      returnObj[String(result.getValue({ name: 'internalid' }))] =
-        result.getValue({ name: 'formulatext' }) || '';
-      return true;
-    });
-
-    return returnObj;
-  }
-
   // --------------------------------------------------------------------------
   // HELPERS
   // --------------------------------------------------------------------------
@@ -1255,7 +1219,7 @@ define([
   }
 
   function escBr(v) {
-    if (v == null) return '';
+    if (v === null || v === undefined) return '';
     return String(v)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -1266,7 +1230,7 @@ define([
   }
 
   function esc(v) {
-    if (v == null) return '';
+    if (v === null || v === undefined) return '';
     return String(v)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -1277,7 +1241,7 @@ define([
   }
 
   function escPlain(v) {
-    if (v == null) return '';
+    if (v === null || v === undefined) return '';
     return String(v)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -1286,16 +1250,53 @@ define([
       .replace(/'/g, '&#39;');
   }
 
+  function money(n) {
+    var x = parseFloat(n || 0);
+    if (!isFinite(x)) x = 0;
+    return '$' + x.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
+
+  function pct(n) {
+    var x = parseFloat(n || 0);
+    if (!isFinite(x)) x = 0;
+    return x.toFixed(2) + '%';
+  }
+
   function formatCurrency(amount) {
-    if (amount === '' || amount == null) return '';
-    if (String(amount).indexOf('$') !== -1) return amount;
+    if (amount == '' || amount == null) return '';
+    if (String(amount).indexOf('$') != -1) return amount;
     return '$ ' + parseFloat(amount).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
+
+  function getEmployeeList() {
+    var returnObj = {};
+
+    var employeeSearchObj = search.create({
+      type: 'employee',
+      filters: [],
+      columns: [
+        search.createColumn({ name: 'internalid' }),
+        search.createColumn({
+          name: 'formulatext',
+          formula: "{firstname} || ' ' || {lastname}"
+        })
+      ]
+    });
+
+    employeeSearchObj.run().each(function (result) {
+      returnObj[String(result.getValue({ name: 'internalid' }))] = result.getValue({ name: 'formulatext' }) || '';
+      return true;
+    });
+
+    return returnObj;
   }
 
   function formatDateMMDDYYYY(dateStr) {
     if (!dateStr) return '';
+
     dateStr = String(dateStr);
 
+    // Handle MM/DD/YYYY
     if (dateStr.indexOf('/') !== -1) {
       var parts = dateStr.split('/');
       if (parts.length === 3) {
@@ -1304,16 +1305,19 @@ define([
         var yStr = parts[2];
         if (yStr.length === 2) yStr = '20' + yStr;
         var y = parseInt(yStr, 10);
+
         var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         return d + '-' + months[m] + '-' + y;
       }
     }
 
+    // Fallback
     var dt = new Date(dateStr);
     if (!isNaN(dt)) {
       var months2 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
       return dt.getDate() + '-' + months2[dt.getMonth()] + '-' + dt.getFullYear();
     }
+
     return dateStr;
   }
 
@@ -1322,82 +1326,6 @@ define([
     if (isNaN(date)) return '';
     var days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     return days[date.getDay()];
-  }
-
-  function colLetter(colNum) {
-    var temp = '';
-    var letter = '';
-    while (colNum > 0) {
-      temp = (colNum - 1) % 26;
-      letter = String.fromCharCode(temp + 65) + letter;
-      colNum = (colNum - temp - 1) / 26;
-    }
-    return letter;
-  }
-
-  function buildRefFromCells(cells) {
-    var refs = Object.keys(cells);
-    if (!refs.length) return 'A1';
-
-    var minCol = 9999, minRow = 999999, maxCol = 1, maxRow = 1;
-
-    for (var i = 0; i < refs.length; i++) {
-      var rc = refToRC(refs[i]);
-      if (rc.c < minCol) minCol = rc.c;
-      if (rc.r < minRow) minRow = rc.r;
-      if (rc.c > maxCol) maxCol = rc.c;
-      if (rc.r > maxRow) maxRow = rc.r;
-    }
-
-    return colLetter(minCol) + minRow + ':' + colLetter(maxCol) + maxRow;
-  }
-
-  function refToRC(ref) {
-    var m = ref.match(/^([A-Z]+)(\d+)$/);
-    var col = m[1], row = parseInt(m[2], 10), c = 0;
-    for (var i = 0; i < col.length; i++) {
-      c = c * 26 + (col.charCodeAt(i) - 64);
-    }
-    return { r: row, c: c };
-  }
-
-  function stripEqual(f) {
-    return String(f || '').replace(/^=/, '');
-  }
-
-  function inferType(v) {
-    if (v == null || v === '') return 's';
-    if (typeof v === 'number') return 'n';
-    if (typeof v === 'boolean') return 'b';
-    return 's';
-  }
-
-  function stripHtmlBreaks(v) {
-    return String(v || '')
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'");
-  }
-
-  function fullBorder() {
-    return {
-      top: { style: 'thin', color: { rgb: '000000' } },
-      bottom: { style: 'thin', color: { rgb: '000000' } },
-      left: { style: 'thin', color: { rgb: '000000' } },
-      right: { style: 'thin', color: { rgb: '000000' } }
-    };
-  }
-
-  function noBorder() {
-    return {
-      top: { style: 'none' },
-      bottom: { style: 'none' },
-      left: { style: 'none' },
-      right: { style: 'none' }
-    };
   }
 
   return {
