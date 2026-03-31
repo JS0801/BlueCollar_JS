@@ -479,8 +479,8 @@ define([
         search.createColumn({ name: 'custcol_bc_time_type', join: 'CUSTCOL_BC_TM_TIME_BILL', summary: 'GROUP' }),
         search.createColumn({ name: 'custcol_bc_tm_billing_shift', join: 'CUSTCOL_BC_TM_TIME_BILL', summary: 'GROUP' }),
         search.createColumn({
-    name: 'formulatext123',
-    summary: 'GROUP',
+        name: 'formulatext123',
+        summary: 'GROUP',
     formula: "TO_CHAR({CUSTCOL_BC_TM_TIME_BILL.date}, 'MM/DD/YYYY')",
     label: 'Formatted Date', sort: search.Sort.ASC
 }),
@@ -559,7 +559,7 @@ define([
         };
       }
 
-      employeeMap[empKey].dateMap[dateStr] = hours.toFixed(2);
+      employeeMap[empKey].dateMap[dateStr] = hours;
       employeeMap[empKey].totalWeek += hours;
       employeeMap[empKey].amt += amtTime;
 
@@ -671,7 +671,7 @@ define([
           }
         }
 
-        totalRow.days.push({ date: date, hours: dateSum.toFixed(2) });
+        totalRow.days.push({ date: date, hours: dateSum });
         totalRow.totalWeek = parseFloat(totalRow.totalWeek) + parseFloat(dateSum);
       }
 
