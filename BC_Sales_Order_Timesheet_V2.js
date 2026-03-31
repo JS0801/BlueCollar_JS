@@ -614,7 +614,7 @@ define([
         var dt = sortedDates[d];
         row.days.push({
           date: dt,
-          hours: parseFloat(emp.dateMap[dt] || 0).toFixed(2)
+          hours: emp.dateMap[dt] || 0
         });
       }
 
@@ -665,7 +665,7 @@ define([
           var rowData = sortedGroup[sr];
           for (var dy = 0; dy < rowData.days.length; dy++) {
             if (rowData.days[dy].date === date) {
-              dateSum += parseFloat(rowData.days[dy].hours || 0) || 0;
+              dateSum += parseFloat(rowData.days[dy].hours || 0);
               break;
             }
           }
@@ -999,7 +999,7 @@ define([
     + '<td>' + labor[q].shift + '</td>';
 
   for (var w = 0; w < labor[q].days.length; w++) {
-    html += '<td>' + labor[q].days[w].hours + '</td>';
+    html += '<td>' + (labor[q].days[w].hours).toFixed(2) + '</td>';
   }
 
   html += '<td>' + labor[q].totalWeek + '</td>'
@@ -1055,7 +1055,7 @@ if (labor.length > 1) {
       for (var r = 1; r < equp.length; r++) {
         html += '<tr><td colspan="4">' + equp[r].role + '</td>';
         for (var t = 0; t < equp[r].days.length; t++) {
-          html += '<td>' + equp[r].days[t].hours + '</td>';
+          html += '<td>' + (equp[r].days[t].hours).toFixed(2) + '</td>';
         }
         html += '<td>' + equp[r].totalWeek + '</td>'
           + '<td colspan="' + (14 - equp[r].days.length) + '"></td>'
