@@ -104,9 +104,9 @@ define([
     var logo = subrec.getValue('logo');
     var logoUrl = '';
     if (logo) {
-      logoUrl = ('https://9873410-sb1.app.netsuite.com' + file.load({ id: logo }).url).replace(/&/g, '&amp;');
+      logoUrl = ('https://9873410.app.netsuite.com' + file.load({ id: logo }).url).replace(/&/g, '&amp;');
     } else {
-      logoUrl = 'https://9873410-sb1.app.netsuite.com/core/media/media.nl?id=11486&amp;c=9873410_SB1&amp;h=1hbkOLk3U5GSjdY4GjdiGdKUZDkL4wsovPepc9ocNenvsfSW';
+      logoUrl = 'https://9873410.app.netsuite.com/core/media/media.nl?id=11486&amp;c=9873410_SB1&amp;h=1hbkOLk3U5GSjdY4GjdiGdKUZDkL4wsovPepc9ocNenvsfSW';
     }
 
     var soNumbers = [];
@@ -115,7 +115,7 @@ define([
     var memos = [];
     var customerNames = [];
     var billAddrHtml = escBr(firstSO.getValue({ fieldId: 'billaddress' }) || '');
-    var dueDate = esc(firstSO.getText({ fieldId: 'duedate' }) || firstSO.getValue({ fieldId: 'duedate' }) || '');
+    var dueDate = esc(firstSO.getText({ fieldId: 'custbody_so_due_date' }) || firstSO.getValue({ fieldId: 'custbody_so_due_date' }) || '');
     var terms = esc(firstSO.getText({ fieldId: 'terms' }) || '');
     var currencyText = esc(firstSO.getText({ fieldId: 'currency' }) || '');
     var soDate = esc(firstSO.getText({ fieldId: 'trandate' }) || firstSO.getValue({ fieldId: 'trandate' }) || '');
@@ -294,7 +294,7 @@ define([
   + '<b>ATTN:</b><br/>'
   + billAddrHtml
   + '</td>'
-  + '<td colspan="6" valign="top" style="border:none;"><b>Invoice Date:</b><br/>' + soDate + '</td>'
+  + '<td colspan="6" valign="top" style="border:none;mso-number-format:\\@;"><b>Invoice Date:</b><br/>' + soDate + '</td>'
   + '<td colspan="5" rowspan="4" align="right" valign="top" style="border:none;">'
   + subAddrHtml + '<br/>'
   + '<b>ABN:</b> ' + subABN
@@ -328,7 +328,7 @@ define([
   + '<tr><td colspan="16" style="border:none;">'
   + '<b>Sales Orders:</b> ' + esc(soNumbers.join(', ')) + '<br/><br/>'
   + '<b>Customer:</b> ' + esc(customerNames.join(', ')) + '<br/><br/>'
-  + '<b>Due Date:</b> ' + dueDate + '<br/><br/>'
+  + '<b>Due Date:</b> <span style="mso-number-format:\\@;">' + dueDate + '</span><br/><br/>'
   + '<b>Payment Terms:</b> ' + terms + '<br/><br/>'
   + 'Please email remittance advice to ' + remitEmail + '<br/><br/>'
   + '<b>BANK ACCOUNT DETAILS</b><br/>'
@@ -370,9 +370,9 @@ define([
     var logo = subrec.getValue('logo');
     var logoUrl = '';
     if (logo) {
-      logoUrl = ('https://9873410-sb1.app.netsuite.com' + file.load({ id: logo }).url).replace(/&/g, '&amp;');
+      logoUrl = ('https://9873410.app.netsuite.com' + file.load({ id: logo }).url).replace(/&/g, '&amp;');
     } else {
-      logoUrl = 'https://9873410-sb1.app.netsuite.com/core/media/media.nl?id=11486&amp;c=9873410_SB1&amp;h=1hbkOLk3U5GSjdY4GjdiGdKUZDkL4wsovPepc9ocNenvsfSW';
+      logoUrl = 'https://9873410.app.netsuite.com/core/media/media.nl?id=11486&amp;c=9873410_SB1&amp;h=1hbkOLk3U5GSjdY4GjdiGdKUZDkL4wsovPepc9ocNenvsfSW';
     }
 
     var replaceLabor = false;
@@ -400,11 +400,32 @@ define([
       }
     }
 
+    function formatToDATE(dateValue) {
+    if (!dateValue) return '';
+
+    var dt = dateValue;
+
+    if (Object.prototype.toString.call(dt) !== '[object Date]') {
+        dt = new Date(dateValue);
+    }
+
+    if (isNaN(dt)) return '';
+
+    var mm = dt.getMonth() + 1;
+    var dd = dt.getDate();
+    var yyyy = dt.getFullYear();
+
+    mm = mm < 10 ? '0' + mm : mm;
+    dd = dd < 10 ? '0' + dd : dd;
+
+    return mm + '/' + dd + '/' + yyyy;
+}
+
     var headerInfo = {
       soId: soId,
       client: salesorderRec.getText({ fieldId: 'entity' }) || '',
       customerRef: salesorderRec.getValue({ fieldId: 'otherrefnum' }) || '',
-      weekEnding: salesorderRec.getText({ fieldId: 'trandate' }) || '',
+      weekEnding: formatToDATE(salesorderRec.getText({ fieldId: 'trandate' })) || '',
       docNumber: salesorderRec.getValue({ fieldId: 'tranid' }) || '',
       description: salesorderRec.getValue({ fieldId: 'memo' }) || '',
       supervisor: salesorderRec.getText({ fieldId: 'custbody_client_supervisor' }) || '',
