@@ -1286,7 +1286,7 @@ if (labor.length > 1) {
     var parts = val.toFixed(2).split('.');
     parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
-    return neg + '$' + parts[0] + '.' + parts[1];
+    return neg + ' $' + parts[0] + '.' + parts[1];
 }
 
   function pct(n) {
