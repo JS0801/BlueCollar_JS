@@ -559,7 +559,7 @@ define([
         };
       }
 
-      employeeMap[empKey].dateMap[dateStr] = hours.toFixed(1);
+      employeeMap[empKey].dateMap[dateStr] = hours.toFixed(2);
       employeeMap[empKey].totalWeek += hours;
       employeeMap[empKey].amt += amtTime;
 
@@ -603,7 +603,7 @@ define([
         shiftType: escPlain(emp.shiftType),
         shift: escPlain(emp.shift),
         days: [],
-        totalWeek: emp.totalWeek.toFixed(1),
+        totalWeek: emp.totalWeek.toFixed(2),
         rate: emp.rate.toFixed(2),
         amt: emp.amt.toFixed(2),
         notes: escPlain(emp.notes),
