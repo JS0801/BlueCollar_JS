@@ -614,7 +614,7 @@ define([
         var dt = sortedDates[d];
         row.days.push({
           date: dt,
-          hours: emp.dateMap[dt] || 0
+          hours: emp.dateMap[dt].toFixed(2) || 0
         });
       }
 
@@ -1018,7 +1018,7 @@ if (labor.length > 1) {
     + '<td class="table-header"><b>' + last.employee + '</b></td>';
 
   for (var w = 0; w < last.days.length; w++) {
-    html += '<td class="table-header"><b>' + last.days[w].hours + '</b></td>';
+    html += '<td class="table-header"><b>' + (last.days[w].hours) + '</b></td>';
   }
 
   html += '<td class="table-header"><b>' + last.totalWeek + '</b></td>'
