@@ -211,7 +211,7 @@ define([
       rowsHtml += ''
         + '<tr>'
         + '<td colspan="8" style="border-right:0px; border-top:0px; border-bottom: 1px solid #C9C9C9;" >' + esc(cat) + '</td>'
-        + '<td colspan="2" style="border-right:0px; border-top:0px; border-left:0px; border-bottom:1px solid #C9C9C9; mso-number-format:\'\\$\'#,##0.00;-\'\\$\'#,##0.00;" align="right">' + parseFloat(amt || 0) + '</td>'
+        + '<td colspan="2" style="border-right:0px; border-top:0px; border-left:0px; border-bottom:1px solid #C9C9C9; mso-number-format:\'\\$\'#,##0.00;-\'\\$\'#,##0.00;" align="right">' + money(amt || 0) + '</td>'
         + '<td colspan="2" style="border-right:0px;  border-top:0px; border-left:0px; border-bottom: 1px solid #C9C9C9;" align="center">' + pct(txr) + '</td>'
         + '<td colspan="2" style="border-right:0px;  border-top:0px; border-left:0px; border-bottom: 1px solid #C9C9C9;" align="right">' + money(Math.abs(txa)) + '</td>'
         + '<td colspan="2" style="border-left:0px; border-top:0px; border-bottom:1px solid #C9C9C9; mso-number-format:\\@;" align="right">' + money(amt + txa) + '</td>'
@@ -1279,10 +1279,15 @@ if (labor.length > 1) {
   }
 
   function money(n) {
-    var x = parseFloat(n || 0);
-    if (!isFinite(x)) x = 0;
-    return '$' + x.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  }
+    val = parseFloat(val || 0);
+    var neg = val < 0 ? '-' : '';
+    val = Math.abs(val);
+
+    var parts = val.toFixed(2).split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+    return neg + '$' + parts[0] + '.' + parts[1];
+}
 
   function pct(n) {
     var x = parseFloat(n || 0);
