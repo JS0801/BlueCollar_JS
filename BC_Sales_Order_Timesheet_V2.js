@@ -1003,8 +1003,8 @@ log.debug('legendArray', legendArray)
   }
 
   html += '<td>' + labor[q].totalWeek + '</td>'
-    + '<td>' + formatCurrency(labor[q].rate) + '</td>'
-    + '<td>' + formatCurrency(labor[q].amt) + '</td>'
+    + '<td style = "mso-number-format:\\@;">' + formatCurrency(labor[q].rate) + '</td>'
+    + '<td style = "mso-number-format:\\@;">' + formatCurrency(labor[q].amt) + '</td>'
     + '<td colspan="' + (12 - labor[q].days.length) + '"></td>'
     + '</tr>';
 }
@@ -1022,8 +1022,8 @@ if (labor.length > 1) {
   }
 
   html += '<td class="table-header"><b>' + last.totalWeek + '</b></td>'
-    + '<td class="table-header"><b>' + formatCurrency(last.rate) + '</b></td>'
-    + '<td class="table-header"><b>' + formatCurrency(last.amt) + '</b></td>'
+    + '<td class="table-header" style = "mso-number-format:\\@;"><b>' + formatCurrency(last.rate) + '</b></td>'
+    + '<td class="table-header" style = "mso-number-format:\\@;"><b>' + formatCurrency(last.amt) + '</b></td>'
     + '</tr>';
 }
       html += '</table>';
@@ -1084,7 +1084,7 @@ if (labor.length > 1) {
             + '<td colspan="13" style="border:0px solid #000;"></td>'
             + '<td colspan="2" align="right" style="background-color:#3a4b87; color:white; font-weight:bold;">Total</td>'
             + '<td align="right"></td>'
-            + '<td align="right" style="font-weight:bold;" >' + m.amount + '</td>'
+            + '<td align="right" style="font-weight:bold; mso-number-format:\\@;" >' + m.amount + '</td>'
             + '</tr>';
         } else {
           html += '<tr>'
@@ -1092,8 +1092,8 @@ if (labor.length > 1) {
             + '<td colspan="3">' + m.mainName + '</td>'
             + '<td colspan="2">' + m.cleanedPO + '</td>'
             + '<td colspan="8">' + m.memo + '</td>'
-            + '<td align="right">' + formatCurrency(m.cost) + '</td>'
-            + '<td align="right">' + formatCurrency(m.amount) + '</td>'
+            + '<td align="right" style = "mso-number-format:\\@;">' + formatCurrency(m.cost) + '</td>'
+            + '<td align="right" style = "mso-number-format:\\@;">' + formatCurrency(m.amount) + '</td>'
             + '</tr>';
         }
       }
@@ -1118,16 +1118,16 @@ if (labor.length > 1) {
           html += '<tr>'
             + '<td colspan="5" style="border:0px solid #000; background-color:#3a4b87; color:white; font-weight:bold;">Total</td>'
             + '<td colspan="10" align="right"></td>'
-            + '<td align="right" style="background-color:#3a4b87; color:white; font-weight:bold;">' + e.cost + '</td>'
-            + '<td align="right" style="background-color:#3a4b87; color:white; font-weight:bold;">' + e.amount + '</td>'
+            + '<td align="right" style="background-color:#3a4b87; color:white; font-weight:bold; mso-number-format:\\@;">' + e.cost + '</td>'
+            + '<td align="right" style="background-color:#3a4b87; color:white; font-weight:bold; mso-number-format:\\@;">' + e.amount + '</td>'
             + '</tr>';
         } else {
           html += '<tr>'
             + '<td colspan="5">' + e.expCat + '</td>'
             + '<td colspan="2">' + e.cleanedPO + '</td>'
             + '<td colspan="8">' + e.memo + '</td>'
-            + '<td align="right">' + formatCurrency(e.cost) + '</td>'
-            + '<td align="right">' + formatCurrency(e.amount) + '</td>'
+            + '<td align="right" style = "mso-number-format:\\@;">' + formatCurrency(e.cost) + '</td>'
+            + '<td align="right" style = "mso-number-format:\\@;">' + formatCurrency(e.amount) + '</td>'
             + '</tr>';
         }
       }
