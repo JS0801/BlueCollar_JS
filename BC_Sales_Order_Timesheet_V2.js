@@ -211,10 +211,10 @@ define([
       rowsHtml += ''
         + '<tr>'
         + '<td colspan="8" style="border-right:0px; border-top:0px; border-bottom: 1px solid #C9C9C9;" >' + esc(cat) + '</td>'
-        + '<td colspan="2" style="border-right:0px;  border-top:0px; border-left:0px; border-bottom: 1px solid #C9C9C9;" mso-number-format:\\0022$\\0022#,##0;\\-\\0022$\\0022#,##0;" align="right">' + amt + '</td>'
-        + '<td colspan="2" style="border-right:0px;  border-top:0px; border-left:0px; border-bottom: 1px solid #C9C9C9;" align="center">' + pct(txr) + '</td>'
-        + '<td colspan="2" style="border-right:0px;  border-top:0px; border-left:0px; border-bottom: 1px solid #C9C9C9;" align="right">' + money(Math.abs(txa)) + '</td>'
-        + '<td colspan="2" style="border-left:0px; border-top:0px; border-bottom:1px solid #C9C9C9; mso-number-format:\\0022$\\0022#,##0;\\-\\0022$\\0022#,##0;" align="right">' + (amt + txa) + '</td>'
+        + '<td colspan="2" style="border-right:0px;  border-top:0px; border-left:0px; border-bottom: 1px solid #C9C9C9;" mso-number-format:\\#\\,\\#\\#0; " align="right">' + amt + '</td>'
+        + '<td colspan="2" style="border-right:0px;  border-top:0px; border-left:0px; border-bottom: 1px solid #C9C9C9;" mso-number-format:\\#\\,\\#\\#0; " align="center">' + pct(txr) + '</td>'
+        + '<td colspan="2" style="border-right:0px;  border-top:0px; border-left:0px; border-bottom: 1px solid #C9C9C9;" mso-number-format:\\#\\,\\#\\#0; " align="right">' + money(Math.abs(txa)) + '</td>'
+        + '<td colspan="2" style="border-left:0px; border-top:0px; border-bottom:1px solid #C9C9C9; mso-number-format:\\#\\,\\#\\#0; " align="right">' + (amt + txa) + '</td>'
         + '</tr>';
     }
 
