@@ -671,11 +671,11 @@ define([
           }
         }
 
-        totalRow.days.push({ date: date, hours: dateSum.toFixed(1) });
+        totalRow.days.push({ date: date, hours: dateSum.toFixed(2) });
         totalRow.totalWeek = parseFloat(totalRow.totalWeek) + parseFloat(dateSum);
       }
 
-      totalRow.totalWeek = parseFloat(totalRow.totalWeek).toFixed(1);
+      totalRow.totalWeek = parseFloat(totalRow.totalWeek).toFixed(2);
       groupedFinalArray[group] = [header].concat(sortedGroup).concat([totalRow]);
     }
 
