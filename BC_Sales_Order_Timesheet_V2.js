@@ -1278,7 +1278,7 @@ if (labor.length > 1) {
       .replace(/'/g, '&#39;');
   }
 
-  function money(n) {
+  function money(val) {
     val = parseFloat(val || 0);
     var neg = val < 0 ? '-' : '';
     val = Math.abs(val);
