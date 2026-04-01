@@ -594,7 +594,7 @@ function buildExcelHtml(ctx) {
   function grandSummaryBlock(line){
     return ''
     + '<table border="0" cellspacing="0" cellpadding="0" style="border-collapse:collapse;width:100%;table-layout:fixed;font-size:12pt;margin-top:6px">'
-    +   '<tr><td></td></tr><tr><td></td></tr><tr><td colspan="5" align="center" rowspan="4" style="'+TD7+'font-size: 14px; "><b>Payment Terms: </b>'+esc(V.terms)+'</td>'
+    +   '<tr><td></td></tr><tr><td></td></tr><tr><td colspan="4" align="center" rowspan="4" style="'+TD7+'font-size: 14px; "><b>Payment Terms: </b>'+esc(V.terms)+'</td>'
     +       '<td colspan="2" align="center" style="'+TD7+' border: 1px; background-color:#3a4b87;color:#FFFFFF;" bgcolor="#3a4b87"><b>Total Summary</b></td></tr>'
     +   '<tr>'
     +       '<td align="right" style="'+TD7+'border: 1px; border-top:0;border-right:0;"><b>SubTotal</b></td>'
