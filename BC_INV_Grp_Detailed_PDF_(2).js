@@ -726,7 +726,7 @@ html += '<tr style="height:110px;">'
     }
     if(line.groupTotal){
       var spancol = 5;
-      if (line.group == 'Labor' || line.group == 'Labour') spancol = 4;
+      if (line.group == 'Labor' || line.group == 'Labour' || line.group == 'Equipment / Vehicle Rental') spancol = 4;
       html += sectionSubtotalsRow(line.groupSub, line.groupTax, line.groupTotal, spancol);
       html += '</table>';
       open=false;
