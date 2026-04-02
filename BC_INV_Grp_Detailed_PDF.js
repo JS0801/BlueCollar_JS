@@ -161,11 +161,11 @@
           total = totalWithTax;
           lineTaxCalc = taxAmountFromSearch;
         }  else {
-    // For Labor/Equipment: derive subtotal from search totals instead of rate * qty
-    lineSubtotalCalc = totalWithTax - taxAmountFromSearch;
-    total = totalWithTax;
-    lineTaxCalc = taxAmountFromSearch;
-}
+           // For Labor/Equipment: derive subtotal from search totals instead of rate * qty
+           lineSubtotalCalc = totalWithTax - taxAmountFromSearch;
+           total = totalWithTax;
+           lineTaxCalc = taxAmountFromSearch;
+        }
         // else {
         //   // For Labor/Equipment: calculate pre-tax as maxRate * quantity
         //   lineSubtotalCalc = Math.abs(parseFloat(maxRate) * parseFloat(qty));
