@@ -160,9 +160,7 @@
           lineSubtotalCalc = Math.abs(sumRate);
           total = totalWithTax;
           lineTaxCalc = taxAmountFromSearch;
-        } 
-
-         } else {
+        }  else {
     // For Labor/Equipment: derive subtotal from search totals instead of rate * qty
     lineSubtotalCalc = totalWithTax - taxAmountFromSearch;
     total = totalWithTax;
