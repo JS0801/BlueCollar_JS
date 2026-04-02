@@ -721,6 +721,7 @@ html += '<tr style="height:110px;">'
 
     var laborTotal = 0;
 var laborTotalV = 0;
+  var lineSubtotal = 0;
 var inLabor = false;
 
 for (var i = 0; i < ctx.finalArray.length; i++) {
@@ -739,14 +740,15 @@ for (var i = 0; i < ctx.finalArray.length; i++) {
 
     if (inLabor && row.totalV) {
         laborTotalV += row.totalV;
+        lineSubtotal += row.lineSubtotal;
 
         // Parse the formatted string total (removes commas)
-        var parsedTotal = parseFloat((row.total || '0').replace(/,/g, ''));
+        var parsedTotal = parseFloat(row.total);
         laborTotal += parsedTotal;
     }
 }
 
-log.debug('Labor Totals', 'total (string sum): ' + laborTotal.toFixed(2) + ' | totalV (numeric sum): ' + laborTotalV.toFixed(2));
+log.debug('Labor Totals', 'total (string sum): ' + laborTotal + ' | totalV (numeric sum): ' + laborTotalV + ' | LinetotalV (numeric sum): ' + lineSubtotal);
 
   (ctx.finalArray || []).forEach(function(line){
     if(line.groupstart){
