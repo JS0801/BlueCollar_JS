@@ -1018,7 +1018,7 @@ if (labor.length > 1) {
     + '<td class="table-header"><b>' + last.employee + '</b></td>';
 
   for (var w = 0; w < last.days.length; w++) {
-    html += '<td class="table-header"><b>' + (last.days[w].hours)).toFixed(2) + '</b></td>';
+    html += '<td class="table-header"><b>' + (last.days[w].hours).toFixed(2) + '</b></td>';
   }
 
   html += '<td class="table-header"><b>' + last.totalWeek + '</b></td>'
