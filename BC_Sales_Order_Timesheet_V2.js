@@ -995,14 +995,16 @@ define([
   html += '<tr>'
     + '<td colspan="2">' + labor[q].employee + '</td>'
     + '<td colspan="2">' + labor[q].role + '</td>'
-    + '<td>' + labor[q].shiftType + '</td>'
-    + '<td>' + labor[q].shift + '</td>';
+    + '<td align = "center">' + labor[q].shiftType + '</td>'
+    + '<td align = "center">' + labor[q].shift + '</td>';
 
   for (var w = 0; w < labor[q].days.length; w++) {
-    html += '<td>' + (labor[q].days[w].hours).toFixed(2) + '</td>';
+    var hrs = labor[q].days[w].hours;
+    var hrsText = (hrs && parseFloat(hrs) !== 0) ? parseFloat(hrs).toFixed(2) : '-';
+    html += '<td align = "center" >' + hrsText + '</td>';
   }
 
-  html += '<td>' + labor[q].totalWeek + '</td>'
+  html += '<td align = "center">' + labor[q].totalWeek + '</td>'
     + '<td style = "mso-number-format:\\0022$\\0022\\#\\,\\#\\#0\\.00;">' + (labor[q].rate) + '</td>'
     + '<td style = "mso-number-format:\\0022$\\0022\\#\\,\\#\\#0\\.00;">' + (labor[q].amt) + '</td>'
     + '<td colspan="' + (12 - labor[q].days.length) + '"></td>'
@@ -1018,10 +1020,12 @@ if (labor.length > 1) {
     + '<td class="table-header"><b>' + last.employee + '</b></td>';
 
   for (var w = 0; w < last.days.length; w++) {
-    html += '<td class="table-header"><b>' + (last.days[w].hours).toFixed(2) + '</b></td>';
+    var hrs = last.days[w].hours;
+    var hrsText = (hrs && parseFloat(hrs) !== 0) ? parseFloat(hrs).toFixed(2) : '-';
+    html += '<td class="table-header" align = "center" ><b>' + hrsText + '</b></td>';
   }
 
-  html += '<td class="table-header"><b>' + last.totalWeek + '</b></td>'
+  html += '<td class="table-header" align = "center"><b>' + last.totalWeek + '</b></td>'
     + '<td class="table-header" style = "mso-number-format:\\0022$\\0022\\#\\,\\#\\#0\\.00;"><b>' + (last.rate) + '</b></td>'
     + '<td class="table-header" style = "mso-number-format:\\0022$\\0022\\#\\,\\#\\#0\\.00;"><b>' + (last.amt) + '</b></td>'
     + '</tr>';
@@ -1055,9 +1059,11 @@ if (labor.length > 1) {
       for (var r = 1; r < equp.length; r++) {
         html += '<tr><td colspan="4">' + equp[r].role + '</td>';
         for (var t = 0; t < equp[r].days.length; t++) {
-          html += '<td>' + (equp[r].days[t].hours).toFixed(2) + '</td>';
+          var hrs = equp[r].days[t].hours;
+          var hrsText = (hrs && parseFloat(hrs) !== 0) ? parseFloat(hrs).toFixed(2) : '-';
+          html += '<td align = "center">' + hrsText + '</td>';
         }
-        html += '<td>' + equp[r].totalWeek + '</td>'
+        html += '<td align = "center">' + equp[r].totalWeek + '</td>'
           + '<td colspan="' + (14 - equp[r].days.length) + '"></td>'
           + '</tr>';
       }
