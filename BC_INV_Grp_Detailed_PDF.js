@@ -162,9 +162,9 @@
           lineTaxCalc = taxAmountFromSearch;
         }  else {
            // For Labor/Equipment: derive subtotal from search totals instead of rate * qty
-           lineSubtotalCalc = totalWithTax - taxAmountFromSearch;
-           total = totalWithTax;
+           lineSubtotalCalc = Math.abs(parseFloat(maxRate) * parseFloat(qty));
            lineTaxCalc = taxAmountFromSearch;
+           total = lineSubtotalCalc + lineTaxCalc;
         }
         // else {
         //   // For Labor/Equipment: calculate pre-tax as maxRate * quantity
