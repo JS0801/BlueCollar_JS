@@ -717,6 +717,8 @@ html += '<tr style="height:110px;">'
     open = true;
   }
 
+  log.debug('finalArray', ctx.finalArray)
+
   (ctx.finalArray || []).forEach(function(line){
     if(line.groupstart){
       if(open){ html += '</table>'; open=false; }
