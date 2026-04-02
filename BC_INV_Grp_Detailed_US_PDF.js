@@ -130,11 +130,18 @@ function (serverWidget, search, record, render, url, log, format, file) {
         lineTotal = sumRate + taxAmountFromSearch;
         lineTax = taxAmountFromSearch;
       } else {
-        // For Labor/Equipment: calculate pre-tax as maxRate * quantity
-        lineSubtotal = Math.abs(parseFloat(maxRate) * parseFloat(qty));
-        lineTotal = totalWithTax;  // Use the search result that includes tax
-        lineTax = taxAmountFromSearch;
+         // For Labor/Equipment: derive subtotal from search totals instead of rate * qty
+        lineSubtotalCalc = totalWithTax - taxAmountFromSearch;
+        total = totalWithTax;
+        lineTaxCalc = taxAmountFromSearch;
       }
+      
+      // else {
+      //   // For Labor/Equipment: calculate pre-tax as maxRate * quantity
+      //   lineSubtotal = Math.abs(parseFloat(maxRate) * parseFloat(qty));
+      //   lineTotal = totalWithTax;  // Use the search result that includes tax
+      //   lineTax = taxAmountFromSearch;
+      // }
 
       // Round everything to 2 decimal places
       lineSubtotal = Math.round((lineSubtotal + Math.sign(lineSubtotal) * 1e-8) * 100) / 100;
