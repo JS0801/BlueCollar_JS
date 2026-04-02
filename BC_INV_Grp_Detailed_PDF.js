@@ -719,6 +719,35 @@ html += '<tr style="height:110px;">'
 
   log.debug('finalArray', ctx.finalArray)
 
+    var laborTotal = 0;
+var laborTotalV = 0;
+var inLabor = false;
+
+for (var i = 0; i < ctx.finalArray.length; i++) {
+    var row = ctx.finalArray[i];
+
+    // Start counting when we hit the Labor group
+    if (row.groupstart === 'Labor') {
+        inLabor = true;
+        continue;
+    }
+
+    // Stop counting when we hit the next group or group end
+    if (inLabor && (row.groupstart || row.groupend)) {
+        break;
+    }
+
+    if (inLabor && row.totalV) {
+        laborTotalV += row.totalV;
+
+        // Parse the formatted string total (removes commas)
+        var parsedTotal = parseFloat((row.total || '0').replace(/,/g, ''));
+        laborTotal += parsedTotal;
+    }
+}
+
+log.debug('Labor Totals', 'total (string sum): ' + laborTotal.toFixed(2) + ' | totalV (numeric sum): ' + laborTotalV.toFixed(2));
+
   (ctx.finalArray || []).forEach(function(line){
     if(line.groupstart){
       if(open){ html += '</table>'; open=false; }
