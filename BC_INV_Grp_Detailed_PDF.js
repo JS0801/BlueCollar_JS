@@ -720,9 +720,9 @@ html += '<tr style="height:110px;">'
   log.debug('finalArray', ctx.finalArray)
 
     var laborTotal = 0;
-var laborTotalV = 0;
-  var lineSubtotal = 0;
-var inLabor = false;
+    var laborTotalV = 0;
+    var lineSubtotal = 0;
+    var inLabor = false;
 
 for (var i = 0; i < ctx.finalArray.length; i++) {
     var row = ctx.finalArray[i];
@@ -740,7 +740,7 @@ for (var i = 0; i < ctx.finalArray.length; i++) {
 
     if (inLabor && row.totalV) {
         laborTotalV += row.totalV;
-        lineSubtotal += row.lineSubtotal;
+        lineSubtotal += parseFloat(row.lineSubtotal);
 
         // Parse the formatted string total (removes commas)
         var parsedTotal = parseFloat(row.total);
