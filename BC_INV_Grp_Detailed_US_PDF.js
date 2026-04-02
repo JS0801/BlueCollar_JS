@@ -131,9 +131,9 @@ function (serverWidget, search, record, render, url, log, format, file) {
         lineTax = taxAmountFromSearch;
       } else {
          // For Labor/Equipment: derive subtotal from search totals instead of rate * qty
-        lineSubtotalCalc = totalWithTax - taxAmountFromSearch;
-        total = totalWithTax;
-        lineTaxCalc = taxAmountFromSearch;
+        lineSubtotal = totalWithTax - taxAmountFromSearch;
+        lineTotal = totalWithTax;
+        lineTax = taxAmountFromSearch;
       }
       
       // else {
