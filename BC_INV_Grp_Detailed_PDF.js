@@ -160,12 +160,20 @@
           lineSubtotalCalc = Math.abs(sumRate);
           total = totalWithTax;
           lineTaxCalc = taxAmountFromSearch;
-        } else {
-          // For Labor/Equipment: calculate pre-tax as maxRate * quantity
-          lineSubtotalCalc = Math.abs(parseFloat(maxRate) * parseFloat(qty));
-          total = totalWithTax;  // Use the search result that includes tax
-          lineTaxCalc = taxAmountFromSearch; // Use the tax from search
-        }
+        } 
+
+         } else {
+    // For Labor/Equipment: derive subtotal from search totals instead of rate * qty
+    lineSubtotalCalc = totalWithTax - taxAmountFromSearch;
+    total = totalWithTax;
+    lineTaxCalc = taxAmountFromSearch;
+}
+        // else {
+        //   // For Labor/Equipment: calculate pre-tax as maxRate * quantity
+        //   lineSubtotalCalc = Math.abs(parseFloat(maxRate) * parseFloat(qty));
+        //   total = totalWithTax;  // Use the search result that includes tax
+        //   lineTaxCalc = taxAmountFromSearch; // Use the tax from search
+        // }
 
         // Round everything to 2 decimal places
         lineSubtotalCalc = Math.round((lineSubtotalCalc + Math.sign(lineSubtotalCalc) * 1e-8) * 100) / 100;
