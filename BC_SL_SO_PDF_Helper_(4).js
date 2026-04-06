@@ -22,7 +22,7 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/file', 'N/encode', 'N/runti
           filters: [
             ["type", "anyof", "SalesOrd"],
             "AND",
-          //  [["custcol_bc_tm_time_bill","noneof","@NONE@"],"OR",[["custcol_bc_tm_source_transaction","noneof","@NONE@"],"AND",["formulatext: case when {custcol_bc_tm_line_id} = {custcol_bc_tm_source_transaction.line} then 1 else 0 end","is","1"]]],
+            //  [["custcol_bc_tm_time_bill","noneof","@NONE@"],"OR",[["custcol_bc_tm_source_transaction","noneof","@NONE@"],"AND",["formulatext: case when {custcol_bc_tm_line_id} = {custcol_bc_tm_source_transaction.line} then 1 else 0 end","is","1"]]],
             ["custcol_bc_tm_time_bill", "noneof", "@NONE@"],
             "AND",
             ["internalid", "anyof", tranid]
@@ -57,25 +57,25 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/file', 'N/encode', 'N/runti
               label: "Country"
             }),
             search.createColumn({
-         name: "custcol_bc_tm_line_id",
-         summary: "GROUP"
-      }),
-      search.createColumn({
-         name: "memo",
-         join: "CUSTCOL_BC_TM_SOURCE_TRANSACTION",
-         summary: "GROUP"
-      }),
-    search.createColumn({
-    name: 'formulatext111',
-    summary: 'GROUP',
-    formula: "TO_CHAR({CUSTCOL_BC_TM_SOURCE_TRANSACTION.trandate}, 'MM/DD/YYYY')",
-    label: 'Formatted Tran Date'
-    }),
-      search.createColumn({
-         name: "quantity",
-         join: "CUSTCOL_BC_TM_SOURCE_TRANSACTION",
-         summary: "SUM"
-      })
+              name: "custcol_bc_tm_line_id",
+              summary: "GROUP"
+            }),
+            search.createColumn({
+              name: "memo",
+              join: "CUSTCOL_BC_TM_SOURCE_TRANSACTION",
+              summary: "GROUP"
+            }),
+            search.createColumn({
+              name: 'formulatext111',
+              summary: 'GROUP',
+              formula: "TO_CHAR({CUSTCOL_BC_TM_SOURCE_TRANSACTION.trandate}, 'MM/DD/YYYY')",
+              label: 'Formatted Tran Date'
+            }),
+            search.createColumn({
+              name: "quantity",
+              join: "CUSTCOL_BC_TM_SOURCE_TRANSACTION",
+              summary: "SUM"
+            })
           ]
         });
         
@@ -120,9 +120,33 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/file', 'N/encode', 'N/runti
           return true;
         });
         
-        const sortedDates = Array.from(uniqueDates).sort(function(a, b) {
+        var sortedDates = Array.from(uniqueDates).sort(function(a, b) {
           return new Date(a) - new Date(b);
         });
+        
+        
+        var fullDates = [];
+        
+        function addZero(val) {
+          return val < 10 ? '0' + val : val;
+        }
+        
+        if (sortedDates.length > 0) {
+          var startDate = new Date(sortedDates[0]);
+          var endDate = new Date(sortedDates[sortedDates.length - 1]);
+          
+          while (startDate <= endDate) {
+            var mm = addZero(startDate.getMonth() + 1);
+            var dd = addZero(startDate.getDate());
+            var yyyy = startDate.getFullYear();
+            
+            fullDates.push(mm + '/' + dd + '/' + yyyy);
+            
+            startDate.setDate(startDate.getDate() + 1);
+          }
+        }
+        
+        sortedDates = fullDates;
         
         // Grouping final output by groupType
         const groupedFinalArray = {};
@@ -300,7 +324,7 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/file', 'N/encode', 'N/runti
         const tranFinalArray = {};
         transactionSearch.run().each(function (result) {
           replaceLabor = result.getText({ name: "country", join: "subsidiary", summary: "GROUP" }) == 'Australia'
-
+          
           const invoicingCategory = result.getText({
             name: "custcol_invoicing_category",
             summary: "GROUP"
@@ -329,7 +353,7 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/file', 'N/encode', 'N/runti
             join: "CUSTCOL_BC_TM_SOURCE_TRANSACTION",
             summary: "MAX"
           })) || 0;
-
+          
           const tax = parseFloat(result.getValue({
             name: "taxamount",
             join: "CUSTCOL_BC_TM_SOURCE_TRANSACTION",
@@ -405,24 +429,24 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/file', 'N/encode', 'N/runti
         for (var key in groupedFinalArray){
           log.debug(key, groupedFinalArray[key])
         }
-if (replaceLabor){
-  Object.keys(groupedFinalArray).forEach(function(groupKey) {
-  const group = groupedFinalArray[groupKey];
-
-  // Replace the key itself if it's "Labor"
-  const newKey = groupKey === 'Labor' ? 'Labour' : groupKey;
-
-
-  group.forEach(function(row) {
-    for (var key in row) {
-      if (typeof row[key] === 'string') {
-        row[key] = row[key].replace(/\bLabor\b/g, 'Labour');
-      }
-    }
-  });
-});
-}
-
+        if (replaceLabor){
+          Object.keys(groupedFinalArray).forEach(function(groupKey) {
+            const group = groupedFinalArray[groupKey];
+            
+            // Replace the key itself if it's "Labor"
+            const newKey = groupKey === 'Labor' ? 'Labour' : groupKey;
+            
+            
+            group.forEach(function(row) {
+              for (var key in row) {
+                if (typeof row[key] === 'string') {
+                  row[key] = row[key].replace(/\bLabor\b/g, 'Labour');
+                }
+              }
+            });
+          });
+        }
+        
         // -------------------------------------------------------
         // BUILD TIME TYPE LEGEND from groupedFinalArray
         // -------------------------------------------------------
@@ -437,10 +461,10 @@ if (replaceLabor){
           'DR2':      'Day Rate 2',
           'DR3':      'Day Rate 3'
         };
-
+        
         var seenTypes = {};
         var legendArray = [];
-
+        
         // Scan groupedFinalArray for unique shiftType values
         Object.keys(groupedFinalArray).forEach(function(category) {
           var rows = groupedFinalArray[category];
@@ -458,13 +482,13 @@ if (replaceLabor){
             }
           });
         });
-
+        
         // Sort legend in consistent order
         var LEGEND_ORDER = ['ST', 'OT', 'DT', 'PT', 'PTO', 'Per Diem', 'DR1', 'DR2', 'DR3'];
         legendArray.sort(function(a, b) {
           return LEGEND_ORDER.indexOf(a.abbr) - LEGEND_ORDER.indexOf(b.abbr);
         });
-
+        
         // Apply Labour replacement to legend if needed
         if (replaceLabor) {
           legendArray.forEach(function(item) {
@@ -473,10 +497,10 @@ if (replaceLabor){
             }
           });
         }
-
+        
         log.debug('Time Type Legend', legendArray);
         // -------------------------------------------------------
-
+        
         const labelLabor = replaceLabor ? 'Labour' : 'Labor';
         if (context.request.parameters.export === 'excel') {
           try {
@@ -491,28 +515,28 @@ if (replaceLabor){
             }
             else logoUrl = "https://9873410.app.netsuite.com/core/media/media.nl?id=11486&amp;c=9873410_SB1&amp;h=1hbkOLk3U5GSjdY4GjdiGdKUZDkL4wsovPepc9ocNenvsfSW";
             log.debug('URL', logoUrl)
-
+            
             function formatToDATE(dateValue) {
-    if (!dateValue) return '';
-
-    var dt = dateValue;
-
-    if (Object.prototype.toString.call(dt) !== '[object Date]') {
-        dt = new Date(dateValue);
-    }
-
-    if (isNaN(dt)) return '';
-
-    var mm = dt.getMonth() + 1;
-    var dd = dt.getDate();
-    var yyyy = dt.getFullYear();
-
-    mm = mm < 10 ? '0' + mm : mm;
-    dd = dd < 10 ? '0' + dd : dd;
-
-    return mm + '/' + dd + '/' + yyyy;
-}
-
+              if (!dateValue) return '';
+              
+              var dt = dateValue;
+              
+              if (Object.prototype.toString.call(dt) !== '[object Date]') {
+                dt = new Date(dateValue);
+              }
+              
+              if (isNaN(dt)) return '';
+              
+              var mm = dt.getMonth() + 1;
+              var dd = dt.getDate();
+              var yyyy = dt.getFullYear();
+              
+              mm = mm < 10 ? '0' + mm : mm;
+              dd = dd < 10 ? '0' + dd : dd;
+              
+              return mm + '/' + dd + '/' + yyyy;
+            }
+            
             
             // Assuming `recordObj` is loaded
             const client = recordObj.getText({ fieldId: 'entity' }) || '';
@@ -634,65 +658,65 @@ if (replaceLabor){
             <br/><br/><br/>`;
             
             if (x.Labor) {
-            html += `<table>
-            <tr>
-            <th colspan="6">${labelLabor}</th>
-            <td colspan="13" align="center" style = "border-top: 1px solid #000; border-bottom: 1px solid #000; border-left: 1px solid #000; border-right: 1px solid #000;">ALL HOURS SHOWN ARE HOURS WORKED</td>
-            </tr>
-            <tr>
-            <th colspan="2" rowspan="2">Name</th>
-            <th colspan="2" rowspan="2">Role</th>
-            <th rowspan="2">Time Type</th>
-            <th rowspan="2">Shift Type</th>
-            <!-- Loop through Dates -->`;
-            var labor = x.Labor;
-            
+              html += `<table>
+              <tr>
+              <th colspan="6">${labelLabor}</th>
+              <td colspan="13" align="center" style = "border-top: 1px solid #000; border-bottom: 1px solid #000; border-left: 1px solid #000; border-right: 1px solid #000;">ALL HOURS SHOWN ARE HOURS WORKED</td>
+              </tr>
+              <tr>
+              <th colspan="2" rowspan="2">Name</th>
+              <th colspan="2" rowspan="2">Role</th>
+              <th rowspan="2">Time Type</th>
+              <th rowspan="2">Shift Type</th>
+              <!-- Loop through Dates -->`;
+              var labor = x.Labor;
+              
               for (var i = 0; i < labor[0].days.length; i++) {
-              var d = labor[0].days[i];
-              html += `<th>${getDayName(d.date)}</th>`
-            }
-            html += `
-            <th rowspan="2">Total Week</th>
-            <th rowspan="2" colspan="${12 - labor[0].days.length}">Notes</th>
-            </tr>
-            <tr>
-            <!-- Date row headers -->`;
-            for (var i = 0; i < labor[0].days.length; i++) {
-              var d = labor[0].days[i];
-              html += `<th>${formatDateMMDDYYYY(d.date)}</th>`
-            }
-            html += `
-            </tr>
-            <!-- Loop through each labor entry -->`;
-            for (var q = 1; q < labor.length; q++) {
-
-              if (q == labor.length - 1) {
-                html += `<tr>
-                <td colspan="5" style = "border:0px solid #000;"></td>
-              <td align = "center" style = "background-color:#3a4b87; color:white; font-weight:bold; border:0px solid #000;">Total</td>`;
-              for (var w = 0; w < labor[q].days.length; w++) {
-                var day = labor[q].days[w] || '';
-                html += `<td align="center" style = "background-color:#3a4b87; color:white; font-weight:bold; ">${((Math.round((day.hours || 0) * 100) / 100) === 0 ? '-' : (Math.round(day.hours * 100) / 100))}</td>`
+                var d = labor[0].days[i];
+                html += `<th>${getDayName(d.date)}</th>`
               }
-              html += `<td align = "center" style = "background-color:#3a4b87; color:white; font-weight:bold;" > ${((Math.round((labor[q].totalWeek || 0) * 100) / 100) === 0 ? '-' : (Math.round(labor[q].totalWeek * 100) / 100))}</td>
-               <td colspan="${12 - labor[q].days.length}" style = "border:0px solid #000;"></td>
-              </tr>`
-              }else{
-                html += `<tr>
-              <td colspan="2">${labor[q].employee}</td>
-              <td colspan="2">${labor[q].role}</td>
-              <td align = "center">${labor[q].shiftType}</td>
-              <td align = "center">${labor[q].shift}</td>`;
-              for (var w = 0; w < labor[q].days.length; w++) {
-                var day = labor[q].days[w] || '';
-                html += `<td align="center">${((Math.round((day.hours || 0) * 10) / 10) === 0 ? '-' : (Math.round(day.hours * 10) / 10))}</td>`
+              html += `
+              <th rowspan="2">Total Week</th>
+              <th rowspan="2" colspan="${12 - labor[0].days.length}">Notes</th>
+              </tr>
+              <tr>
+              <!-- Date row headers -->`;
+              for (var i = 0; i < labor[0].days.length; i++) {
+                var d = labor[0].days[i];
+                html += `<th>${formatDateMMDDYYYY(d.date)}</th>`
               }
-              html += `<td align = "center"> ${((Math.round((labor[q].totalWeek || 0) * 100) / 100) === 0 ? '-' : (Math.round(labor[q].totalWeek * 100) / 100))}</td>
-              <td colspan="${12 - labor[q].days.length}"></td>
-              </tr>`
+              html += `
+              </tr>
+              <!-- Loop through each labor entry -->`;
+              for (var q = 1; q < labor.length; q++) {
+                
+                if (q == labor.length - 1) {
+                  html += `<tr>
+                  <td colspan="5" style = "border:0px solid #000;"></td>
+                  <td align = "center" style = "background-color:#3a4b87; color:white; font-weight:bold; border:0px solid #000;">Total</td>`;
+                  for (var w = 0; w < labor[q].days.length; w++) {
+                    var day = labor[q].days[w] || '';
+                    html += `<td align="center" style = "background-color:#3a4b87; color:white; font-weight:bold; ">${((Math.round((day.hours || 0) * 100) / 100) === 0 ? '-' : (Math.round(day.hours * 100) / 100))}</td>`
+                  }
+                  html += `<td align = "center" style = "background-color:#3a4b87; color:white; font-weight:bold;" > ${((Math.round((labor[q].totalWeek || 0) * 100) / 100) === 0 ? '-' : (Math.round(labor[q].totalWeek * 100) / 100))}</td>
+                  <td colspan="${12 - labor[q].days.length}" style = "border:0px solid #000;"></td>
+                  </tr>`
+                }else{
+                  html += `<tr>
+                  <td colspan="2">${labor[q].employee}</td>
+                  <td colspan="2">${labor[q].role}</td>
+                  <td align = "center">${labor[q].shiftType}</td>
+                  <td align = "center">${labor[q].shift}</td>`;
+                  for (var w = 0; w < labor[q].days.length; w++) {
+                    var day = labor[q].days[w] || '';
+                    html += `<td align="center">${((Math.round((day.hours || 0) * 10) / 10) === 0 ? '-' : (Math.round(day.hours * 10) / 10))}</td>`
+                  }
+                  html += `<td align = "center"> ${((Math.round((labor[q].totalWeek || 0) * 100) / 100) === 0 ? '-' : (Math.round(labor[q].totalWeek * 100) / 100))}</td>
+                  <td colspan="${12 - labor[q].days.length}"></td>
+                  </tr>`
+                }
               }
-            }
-            html += `</table>`;
+              html += `</table>`;
             }
             
             if (x["Equipment / Vehicle Rental"]){
@@ -726,7 +750,7 @@ if (replaceLabor){
               
               for (var r = 1; r < equp.length; r++) {
                 var row = equp[r];
-
+                
                 if (r == equp.length - 1) {
                   html += `<tr>
                   <td colspan="3" ></td>
@@ -742,8 +766,8 @@ if (replaceLabor){
                   html += `<tr>
                   <td colspan="4">${row.role}</td>`;
                   for (var t = 0; t < row.days.length; t++) {
-                     var d = row.days[t];
-                     html += `<td align = "center">${((Math.round((d.hours || 0) * 10) / 10) === 0 ? '-' : (Math.round(d.hours * 10) / 10))}</td>`
+                    var d = row.days[t];
+                    html += `<td align = "center">${((Math.round((d.hours || 0) * 10) / 10) === 0 ? '-' : (Math.round(d.hours * 10) / 10))}</td>`
                   }
                   html += `<td align = "center">${((Math.round((row.totalWeek || 0) * 100) / 100) === 0 ? '-' : (Math.round(row.totalWeek * 100) / 100))}</td>
                   <td colspan="${14 - row.days.length}"></td>
@@ -769,206 +793,206 @@ if (replaceLabor){
               for (var p = 0; p < x.Materials.length; p++) {
                 var m = x.Materials[p];
                 if (m.documentNumber == 'TOTAL'){
-                   html += `<tr>
+                  html += `<tr>
                   <td colspan="5" style = "background-color:#3a4b87; color:white; font-weight:bold; border:0px solid #000;" align = "center">Total</td>
                   <td colspan="13" ></td>
                   <td align="right" style = "background-color:#3a4b87; color:white; font-weight:bold; border:0px solid #000; mso-number-format:\\0022$\\0022\\#\\,\\#\\#0\\.00;" >${m.cost}</td>
                   </tr>`
                 }else {
-                html += `<tr>
-                <td colspan="2">${m.documentNumber}</td>
-                <td colspan="3">${m.mainName}</td>
-                <td colspan="2">${m.cleanedPO}</td>
-                <td colspan="8">${m.memo}</td>
-                <td align="right" style = "mso-number-format:\\0022$\\0022\\#\\,\\#\\#0\\.00;">${m.cost}</td>
-                </tr>`}
-              }
-              html += `</table>`;
-            }
-            
-            if (x.Expenses) {
-              html += `<br/><br/><br/>
-              <table>
-              <tr><th colspan = "5">Expenses</th></tr>
-              <tr>
-              <th colspan="5">Expense Category</th>
-              <th colspan="2">PO #</th>
-              <th colspan="8">Description</th>
-              <th>Total Cost excl. Tax</th>
-              </tr>`;
-              for (var a = 0; a < x.Expenses.length; a++) {
-                var e = x.Expenses[a];
-                if (e.documentNumber == 'TOTAL'){
-                   html += `<tr>
-                   <td colspan="5" style = "background-color:#3a4b87; color:white; font-weight:bold; border:0px solid #000; mso-number-format:\\0022$\\0022\\#\\,\\#\\#0\\.00;" >Total</td>
-                  <td colspan="10"></td>
-                  <td align="right" style = "background-color:#3a4b87; color:white; font-weight:bold; border:0px solid #000; mso-number-format:\\0022$\\0022\\#\\,\\#\\#0\\.00;"  >${e.cost}</td>
-                  </tr>`
-                }else {
                   html += `<tr>
-                <td colspan="5">${e.expCat}</td>
-                <td colspan="2">${e.cleanedPO}</td>
-                <td colspan="8">${e.memo}</td>
-                <td align="right" style = "mso-number-format:\\0022$\\0022\\#\\,\\#\\#0\\.00;">${e.cost}</td>
-                </tr>`
+                  <td colspan="2">${m.documentNumber}</td>
+                  <td colspan="3">${m.mainName}</td>
+                  <td colspan="2">${m.cleanedPO}</td>
+                  <td colspan="8">${m.memo}</td>
+                  <td align="right" style = "mso-number-format:\\0022$\\0022\\#\\,\\#\\#0\\.00;">${m.cost}</td>
+                  </tr>`}
                 }
+                html += `</table>`;
+              }
+              
+              if (x.Expenses) {
+                html += `<br/><br/><br/>
+                <table>
+                <tr><th colspan = "5">Expenses</th></tr>
+                <tr>
+                <th colspan="5">Expense Category</th>
+                <th colspan="2">PO #</th>
+                <th colspan="8">Description</th>
+                <th>Total Cost excl. Tax</th>
+                </tr>`;
+                for (var a = 0; a < x.Expenses.length; a++) {
+                  var e = x.Expenses[a];
+                  if (e.documentNumber == 'TOTAL'){
+                    html += `<tr>
+                    <td colspan="5" style = "background-color:#3a4b87; color:white; font-weight:bold; border:0px solid #000; mso-number-format:\\0022$\\0022\\#\\,\\#\\#0\\.00;" >Total</td>
+                    <td colspan="10"></td>
+                    <td align="right" style = "background-color:#3a4b87; color:white; font-weight:bold; border:0px solid #000; mso-number-format:\\0022$\\0022\\#\\,\\#\\#0\\.00;"  >${e.cost}</td>
+                    </tr>`
+                  }else {
+                    html += `<tr>
+                    <td colspan="5">${e.expCat}</td>
+                    <td colspan="2">${e.cleanedPO}</td>
+                    <td colspan="8">${e.memo}</td>
+                    <td align="right" style = "mso-number-format:\\0022$\\0022\\#\\,\\#\\#0\\.00;">${e.cost}</td>
+                    </tr>`
+                  }
                   
-                
-              }
-              html += `</table>`;
-            }
-
-            // -------------------------------------------------------
-            // INSERT TIME TYPE LEGEND before signature section
-            // -------------------------------------------------------
-            if (legendArray.length > 0) {
-              html += `
-              <br/><br/>
-              <table style="width:100%; border-top: 1px solid #ccc; border-collapse:collapse; font-size:9pt;">
-              <tr>
-                <td style="padding-top:8px; padding-bottom:8px;" colspan = "5">
-                  <strong>Time Type Legend:</strong>&nbsp;&nbsp;`;
-              
-              for (var lg = 0; lg < legendArray.length; lg++) {
-                html += `<strong>${legendArray[lg].abbr}</strong> – ${legendArray[lg].label}`;
-                if (lg < legendArray.length - 1) {
-                  html += '&nbsp;&nbsp;|&nbsp;&nbsp;';
+                  
                 }
+                html += `</table>`;
               }
               
-              html += `
+              // -------------------------------------------------------
+              // INSERT TIME TYPE LEGEND before signature section
+              // -------------------------------------------------------
+              if (legendArray.length > 0) {
+                html += `
+                <br/><br/>
+                <table style="width:100%; border-top: 1px solid #ccc; border-collapse:collapse; font-size:9pt;">
+                <tr>
+                <td style="padding-top:8px; padding-bottom:8px;" colspan = "5">
+                <strong>Time Type Legend:</strong>&nbsp;&nbsp;`;
+                
+                for (var lg = 0; lg < legendArray.length; lg++) {
+                  html += `<strong>${legendArray[lg].abbr}</strong> – ${legendArray[lg].label}`;
+                  if (lg < legendArray.length - 1) {
+                    html += '&nbsp;&nbsp;|&nbsp;&nbsp;';
+                  }
+                }
+                
+                html += `
                 </td>
+                </tr>
+                </table>`;
+              }
+              // -------------------------------------------------------
+              
+              html += `
+              <!-- SIGNATURE SECTION -->
+              <br/><br/><br/>
+              <table style="width:100%; border-collapse:collapse; font-size:9pt; table-layout:fixed; margin-top:10px;">
+              <tr>
+              <td colspan="2" style="width:49%; vertical-align:top;">
+              <table style="width:100%; border-collapse:collapse;">
+              <tr>
+              <td style="background:#3a4b87; color:white; font-weight:bold; border:1px solid #000; text-align:center; padding:8px;" colspan="6"><b>C2O APPROVAL</b></td>
               </tr>
-              </table>`;
+              <tr>
+              <td style="width:20%; border: 1px solid black; background-color:#3a4b87; color:white; font-weight:bold; padding:10px; vertical-align:middle; text-align:left; line-height:0.9; font-size:9pt;" colspan="1">
+              Signature:<br/>Name:<br/>Date:
+              </td>
+              <td style="width:80%; border: 1px solid black; height: 100px; vertical-align:top;" colspan="5"></td>
+              </tr>
+              </table>
+              </td>
+              
+              <td style="width:2%; border: 0px;" colspan="4"></td>
+              
+              <td colspan="2" style="width:49%; vertical-align:top;">
+              <table style="width:100%; border-collapse:collapse;">
+              <tr>
+              <td style="background:#3a4b87; color:white; font-weight:bold; border:1px solid #000; text-align:center; padding:8px;" colspan="6"><b>CLIENT APPROVAL</b></td>
+              </tr>
+              <tr>
+              <td style="width:20%; border: 1px solid black; background-color:#3a4b87; color:white; font-weight:bold; padding:10px; vertical-align:middle; text-align:left; line-height:0.9; font-size:9pt;" colspan="1">
+              Signature:<br/>Name:<br/>Date:
+              </td>
+              <td style="width:80%; border: 1px solid black; height: 100px; vertical-align:top;" colspan="5"></td>
+              </tr>
+              </table>
+              </td>
+              </tr>
+              </table>
+              </body>
+              </html>`;
+              
+              
+              // Create file and save to cabinet
+              var excelFile = file.create({
+                name: `Weekly_Timesheet_${new Date().toISOString().slice(0,10)}.xls`,
+                fileType: file.Type.PLAINTEXT,
+                contents: html,
+                encoding: file.Encoding.UTF_8
+              });
+              
+              context.response.writeFile(excelFile, false);    
+              
+              return;
+              
+              
+            } catch (e) {
+              log.error('Excel Export Error', e.message);
+              context.response.write('Error generating Excel: ' + e.message);
             }
-            // -------------------------------------------------------
-            
-            html += `
-            <!-- SIGNATURE SECTION -->
-            <br/><br/><br/>
-            <table style="width:100%; border-collapse:collapse; font-size:9pt; table-layout:fixed; margin-top:10px;">
-            <tr>
-            <td colspan="2" style="width:49%; vertical-align:top;">
-            <table style="width:100%; border-collapse:collapse;">
-            <tr>
-            <td style="background:#3a4b87; color:white; font-weight:bold; border:1px solid #000; text-align:center; padding:8px;" colspan="6"><b>C2O APPROVAL</b></td>
-            </tr>
-            <tr>
-              <td style="width:20%; border: 1px solid black; background-color:#3a4b87; color:white; font-weight:bold; padding:10px; vertical-align:middle; text-align:left; line-height:0.9; font-size:9pt;" colspan="1">
-                Signature:<br/>Name:<br/>Date:
-              </td>
-              <td style="width:80%; border: 1px solid black; height: 100px; vertical-align:top;" colspan="5"></td>
-            </tr>
-            </table>
-            </td>
-            
-            <td style="width:2%; border: 0px;" colspan="4"></td>
-            
-            <td colspan="2" style="width:49%; vertical-align:top;">
-            <table style="width:100%; border-collapse:collapse;">
-            <tr>
-            <td style="background:#3a4b87; color:white; font-weight:bold; border:1px solid #000; text-align:center; padding:8px;" colspan="6"><b>CLIENT APPROVAL</b></td>
-            </tr>
-            <tr>
-              <td style="width:20%; border: 1px solid black; background-color:#3a4b87; color:white; font-weight:bold; padding:10px; vertical-align:middle; text-align:left; line-height:0.9; font-size:9pt;" colspan="1">
-                Signature:<br/>Name:<br/>Date:
-              </td>
-              <td style="width:80%; border: 1px solid black; height: 100px; vertical-align:top;" colspan="5"></td>
-            </tr>
-            </table>
-            </td>
-            </tr>
-            </table>
-            </body>
-            </html>`;
-            
-            
-            // Create file and save to cabinet
-            var excelFile = file.create({
-              name: `Weekly_Timesheet_${new Date().toISOString().slice(0,10)}.xls`,
-              fileType: file.Type.PLAINTEXT,
-              contents: html,
-              encoding: file.Encoding.UTF_8
-            });
-            
-            context.response.writeFile(excelFile, false);    
-
-            return;
-            
-            
-          } catch (e) {
-            log.error('Excel Export Error', e.message);
-            context.response.write('Error generating Excel: ' + e.message);
           }
+          var strReturn = "<#assign ObjDetail=" + JSON.stringify(groupedFinalArray) + " />";
+          log.debug('strReturn', strReturn);
+          
+          context.response.writeLine(strReturn);
+        } catch (e) {
+          log.error('Error running Suitelet', e);
+          
+          context.response.write('Error: ' + e.message);
         }
-        var strReturn = "<#assign ObjDetail=" + JSON.stringify(groupedFinalArray) + " />";
-        log.debug('strReturn', strReturn);
-        
-        context.response.writeLine(strReturn);
-      } catch (e) {
-        log.error('Error running Suitelet', e);
-        
-        context.response.write('Error: ' + e.message);
       }
     }
-  }
-
-function formatDateMMDDYYYY(dateStr) {
-  log.debug('dateStr', dateStr);
-
-  var parts = dateStr.split('/'); // MM/DD/YYYY
-  var m = parseInt(parts[0], 10) - 1;
-  var d = parseInt(parts[1], 10);
-  var yStr = parts[2];           // year as string
-if (yStr.length === 2) {
-  yStr = '20' + yStr;          // add 20 as prefix
-}
-var y = parseInt(yStr, 10);
-  log.debug('y', y)
-
-  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-  return d + '-' + months[m] + '-' + y;
-}
-  
-  function getEmployeeList() {
-    var returnObj = {}
     
-    var employeeSearchObj = search.create({
-      type: "employee",
-      filters:[],
-      columns:
-      [
-        search.createColumn({name: "internalid", label: "Internal ID"}),
-        search.createColumn({
-          name: "formulatext",
-          formula: "{firstname} || ' ' || {lastname}",
-          label: "Formula (Text)"
-        })
-      ]
-    });
-    var searchResultCount = employeeSearchObj.runPaged().count;
-    employeeSearchObj.run().each(function(result){
-      returnObj[JSON.parse(result.getValue({name: 'internalid'}))] = result.getValue({name: 'formulatext'})
-      return true;
-    });
+    function formatDateMMDDYYYY(dateStr) {
+      log.debug('dateStr', dateStr);
+      
+      var parts = dateStr.split('/'); // MM/DD/YYYY
+      var m = parseInt(parts[0], 10) - 1;
+      var d = parseInt(parts[1], 10);
+      var yStr = parts[2];           // year as string
+      if (yStr.length === 2) {
+        yStr = '20' + yStr;          // add 20 as prefix
+      }
+      var y = parseInt(yStr, 10);
+      log.debug('y', y)
+      
+      var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      
+      return d + '-' + months[m] + '-' + y;
+    }
     
-    return returnObj;
-  }
-  
-  function formatCurrency(amount) {
-    if (isNaN(amount)) return '$ 0.00';
-    return '$ ' + parseFloat(amount).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  }
-  
-  function getDayName(dateStr) {
-    // Example input: "06/27/2025"
-    var date = new Date(dateStr);
-    if (isNaN(date)) return ''; // Handle invalid date
+    function getEmployeeList() {
+      var returnObj = {}
+      
+      var employeeSearchObj = search.create({
+        type: "employee",
+        filters:[],
+        columns:
+        [
+          search.createColumn({name: "internalid", label: "Internal ID"}),
+          search.createColumn({
+            name: "formulatext",
+            formula: "{firstname} || ' ' || {lastname}",
+            label: "Formula (Text)"
+          })
+        ]
+      });
+      var searchResultCount = employeeSearchObj.runPaged().count;
+      employeeSearchObj.run().each(function(result){
+        returnObj[JSON.parse(result.getValue({name: 'internalid'}))] = result.getValue({name: 'formulatext'})
+        return true;
+      });
+      
+      return returnObj;
+    }
     
-    var days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    return days[date.getDay()];
-  }
-  
-  return { onRequest };
-});
+    function formatCurrency(amount) {
+      if (isNaN(amount)) return '$ 0.00';
+      return '$ ' + parseFloat(amount).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+    
+    function getDayName(dateStr) {
+      // Example input: "06/27/2025"
+      var date = new Date(dateStr);
+      if (isNaN(date)) return ''; // Handle invalid date
+      
+      var days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      return days[date.getDay()];
+    }
+    
+    return { onRequest };
+  });
