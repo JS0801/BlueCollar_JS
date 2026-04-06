@@ -36,7 +36,14 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/file', 'N/encode', 'N/runti
             search.createColumn({ name: "memo", join: "CUSTCOL_BC_TM_TIME_BILL", summary: "GROUP", label: "Note" }),
             search.createColumn({ name: "custcol_bc_time_type", join: "CUSTCOL_BC_TM_TIME_BILL", summary: "GROUP", label: "Time Type" }),
             search.createColumn({ name: "custcol_bc_tm_billing_shift", join: "CUSTCOL_BC_TM_TIME_BILL", summary: "GROUP", label: "Shift" }),
-            search.createColumn({ name: "date", join: "CUSTCOL_BC_TM_TIME_BILL", summary: "GROUP", label: "Date", sort: search.Sort.ASC }),
+            //search.createColumn({ name: "date", join: "CUSTCOL_BC_TM_TIME_BILL", summary: "GROUP", label: "Date", sort: search.Sort.ASC }),
+            search.createColumn({ 
+              name: 'formulatext123', 
+              summary: 'GROUP', 
+              formula: "TO_CHAR({CUSTCOL_BC_TM_TIME_BILL.date}, 'MM/DD/YYYY')", 
+              label: 'Formatted Date', 
+              sort: search.Sort.ASC 
+            }),
             search.createColumn({
               name: "formulatext",
               summary: "GROUP",
@@ -58,11 +65,12 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/file', 'N/encode', 'N/runti
          join: "CUSTCOL_BC_TM_SOURCE_TRANSACTION",
          summary: "GROUP"
       }),
-      search.createColumn({
-         name: "trandate",
-         join: "CUSTCOL_BC_TM_SOURCE_TRANSACTION",
-         summary: "GROUP"
-      }),
+    search.createColumn({
+    name: 'formulatext111',
+    summary: 'GROUP',
+    formula: "TO_CHAR({CUSTCOL_BC_TM_SOURCE_TRANSACTION.trandate}, 'MM/DD/YYYY')",
+    label: 'Formatted Tran Date'
+    }),
       search.createColumn({
          name: "quantity",
          join: "CUSTCOL_BC_TM_SOURCE_TRANSACTION",
@@ -80,7 +88,7 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/file', 'N/encode', 'N/runti
           const empName = result.getValue({ name: "employee", join: "CUSTCOL_BC_TM_TIME_BILL", summary: "GROUP" }) || 1039;
           const role = result.getValue({ name: "formulatext1", summary: "GROUP" }) == '- None -'?'': result.getValue({ name: "formulatext1", summary: "GROUP" });
           const shiftType = result.getText({ name: "custcol_bc_time_type", join: "CUSTCOL_BC_TM_TIME_BILL", summary: "GROUP" }) || '';
-          const dateStr = result.getValue({ name: "date", join: "CUSTCOL_BC_TM_TIME_BILL", summary: "GROUP" }) || result.getValue({ name: "trandate", join: "CUSTCOL_BC_TM_SOURCE_TRANSACTION", summary: "GROUP" });
+          const dateStr = result.getValue({ name: "formulatext123", summary: "GROUP" }) || result.getValue({ name: "formulatext111", summary: "GROUP" });
           const hours = parseFloat(result.getValue({ name: "durationdecimal", join: "CUSTCOL_BC_TM_TIME_BILL", summary: "SUM" })) || parseFloat(result.getValue({ name: "quantity", join: "CUSTCOL_BC_TM_SOURCE_TRANSACTION", summary: "SUM" }));
           const note = result.getValue({ name: "memo", join: "CUSTCOL_BC_TM_TIME_BILL", summary: "GROUP" }) || '';
           const groupType = result.getText({ name: "custcol_invoicing_category", summary: "GROUP" }) || '';
@@ -262,7 +270,7 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/file', 'N/encode', 'N/runti
             search.createColumn({
               name: "formulatext",
               summary: "MAX",
-              formula: "CASE   WHEN {custcol_bc_tm_source_transaction.appliedtotransaction} LIKE 'Purchase Order%'   THEN TRIM(REPLACE({custcol_bc_tm_source_transaction.appliedtotransaction}, 'Purchase Order', '')) END",
+              formula: "CASE   WHEN {custcol_bc_tm_source_transaction.appliedtotransaction} LIKE 'Purchase Order%'   THEN TRIM(REPLACE({custcol_bc_tm_source_transaction.appliedtotransaction}, 'Purchase Order', ''))  ELSE {custcol_bc_tm_source_transaction.tranid} END",
               label: "Formula (Text)"
             }),
             search.createColumn({
@@ -483,10 +491,33 @@ if (replaceLabor){
             }
             else logoUrl = "https://9873410-sb1.app.netsuite.com/core/media/media.nl?id=11486&amp;c=9873410_SB1&amp;h=1hbkOLk3U5GSjdY4GjdiGdKUZDkL4wsovPepc9ocNenvsfSW";
             log.debug('URL', logoUrl)
+
+            function formatToDATE(dateValue) {
+    if (!dateValue) return '';
+
+    var dt = dateValue;
+
+    if (Object.prototype.toString.call(dt) !== '[object Date]') {
+        dt = new Date(dateValue);
+    }
+
+    if (isNaN(dt)) return '';
+
+    var mm = dt.getMonth() + 1;
+    var dd = dt.getDate();
+    var yyyy = dt.getFullYear();
+
+    mm = mm < 10 ? '0' + mm : mm;
+    dd = dd < 10 ? '0' + dd : dd;
+
+    return mm + '/' + dd + '/' + yyyy;
+}
+
+            
             // Assuming `recordObj` is loaded
             const client = recordObj.getText({ fieldId: 'entity' }) || '';
             const customerRef = recordObj.getValue({ fieldId: 'otherrefnum' }) || '';
-            const weekEnding = recordObj.getText({ fieldId: 'trandate' }) || '';
+            const weekEnding = formatToDATE(recordObj.getValue({ fieldId: 'trandate' })) || '';
             const docNumber = recordObj.getValue({ fieldId: 'tranid' }) || '';
             const description = recordObj.getValue({ fieldId: 'memo' }) || '';
             const supervisor = recordObj.getText({ fieldId: 'custbody_client_supervisor' }) || '';
