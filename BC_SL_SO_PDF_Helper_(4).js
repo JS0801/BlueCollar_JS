@@ -486,10 +486,10 @@ if (replaceLabor){
             var logo = subrec.getValue('logo')
             var logoUrl = '';
             if (logo) {
-              var fileUrl = "https://9873410-sb1.app.netsuite.com" + file.load({id: logo}).url;
+              var fileUrl = "https://9873410.app.netsuite.com" + file.load({id: logo}).url;
               logoUrl = fileUrl.replace(/&/g, "&amp;")
             }
-            else logoUrl = "https://9873410-sb1.app.netsuite.com/core/media/media.nl?id=11486&amp;c=9873410_SB1&amp;h=1hbkOLk3U5GSjdY4GjdiGdKUZDkL4wsovPepc9ocNenvsfSW";
+            else logoUrl = "https://9873410.app.netsuite.com/core/media/media.nl?id=11486&amp;c=9873410_SB1&amp;h=1hbkOLk3U5GSjdY4GjdiGdKUZDkL4wsovPepc9ocNenvsfSW";
             log.debug('URL', logoUrl)
 
             function formatToDATE(dateValue) {
@@ -665,7 +665,21 @@ if (replaceLabor){
             </tr>
             <!-- Loop through each labor entry -->`;
             for (var q = 1; q < labor.length; q++) {
-              html += `<tr>
+
+              if (q == labor.length - 1) {
+                html += `<tr>
+                <td colspan="5" style = "border:0px solid #000;"></td>
+              <td align = "center" ></td>
+              <td align = "center" style = "background-color:#3a4b87; color:white; font-weight:bold; border:0px solid #000;">Total</td>`;
+              for (var w = 0; w < labor[q].days.length; w++) {
+                var day = labor[q].days[w] || '';
+                html += `<td align="center" style = "background-color:#3a4b87; color:white; font-weight:bold; ">${((Math.round((day.hours || 0) * 100) / 100) === 0 ? '-' : (Math.round(day.hours * 100) / 100))}</td>`
+              }
+              html += `<td align = "center" style = "background-color:#3a4b87; color:white; font-weight:bold; > ${((Math.round((labor[q].totalWeek || 0) * 100) / 100) === 0 ? '-' : (Math.round(labor[q].totalWeek * 100) / 100))}</td>
+              
+              </tr>`
+              }else{
+                html += `<tr>
               <td colspan="2">${labor[q].employee}</td>
               <td colspan="2">${labor[q].role}</td>
               <td align = "center">${labor[q].shiftType}</td>
@@ -677,6 +691,7 @@ if (replaceLabor){
               html += `<td align = "center"> ${((Math.round((labor[q].totalWeek || 0) * 100) / 100) === 0 ? '-' : (Math.round(labor[q].totalWeek * 100) / 100))}</td>
               <td colspan="${12 - labor[q].days.length}"></td>
               </tr>`
+              }
             }
             html += `</table>`;
             }
@@ -712,16 +727,29 @@ if (replaceLabor){
               
               for (var r = 1; r < equp.length; r++) {
                 var row = equp[r];
-                html += `<tr>
-                <td colspan="4">${row.role}</td>`;
-                for (var t = 0; t < row.days.length; t++) {
-                  var d = row.days[t]
-                  
-                  html += `<td align = "center">${((Math.round((d.hours || 0) * 10) / 10) === 0 ? '-' : (Math.round(d.hours * 10) / 10))}</td>`
+
+                if (r == equp.length - 1) {
+                  html += `<tr>
+                  <td colspan="3" ></td>
+                  <td align = "center" style = "background-color:#3a4b87; color:white; font-weight:bold; border:0px solid #000;">Total</td>`;
+                  for (var t = 0; t < row.days.length; t++) {
+                    var d = row.days[t];
+                    html += `<td align = "center" style = "background-color:#3a4b87; color:white; font-weight:bold; border:0px solid #000;">${((Math.round((d.hours || 0) * 100) / 100) === 0 ? '-' : (Math.round(d.hours * 100) / 100))}</td>`
+                  }
+                  html += `<td align = "center" style = "background-color:#3a4b87; color:white; font-weight:bold; border:0px solid #000;">${((Math.round((row.totalWeek || 0) * 100) / 100) === 0 ? '-' : (Math.round(row.totalWeek * 100) / 100))}</td>
+                  </tr>`
+                }else{
+                  html += `<tr>
+                  <td colspan="4">${row.role}</td>`;
+                  for (var t = 0; t < row.days.length; t++) {
+                     var d = row.days[t];
+                     html += `<td align = "center">${((Math.round((d.hours || 0) * 10) / 10) === 0 ? '-' : (Math.round(d.hours * 10) / 10))}</td>`
+                  }
+                  html += `<td align = "center">${((Math.round((row.totalWeek || 0) * 100) / 100) === 0 ? '-' : (Math.round(row.totalWeek * 100) / 100))}</td>
+                  <td colspan="${14 - row.days.length}"></td>
+                  </tr>`
                 }
-                html += `<td align = "center">${((Math.round((row.totalWeek || 0) * 100) / 100) === 0 ? '-' : (Math.round(row.totalWeek * 100) / 100))}</td>
-                <td colspan="${14 - row.days.length}"></td>
-                </tr>`
+                
               }
               
               html += `</table>`;
@@ -798,7 +826,7 @@ if (replaceLabor){
               <br/><br/>
               <table style="width:100%; border-top: 1px solid #ccc; border-collapse:collapse; font-size:9pt;">
               <tr>
-                <td style="padding-top:8px; padding-bottom:8px;">
+                <td style="padding-top:8px; padding-bottom:8px;" colspan = "5">
                   <strong>Time Type Legend:</strong>&nbsp;&nbsp;`;
               
               for (var lg = 0; lg < legendArray.length; lg++) {
