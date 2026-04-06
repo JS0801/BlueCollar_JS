@@ -124,29 +124,34 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/file', 'N/encode', 'N/runti
           return new Date(a) - new Date(b);
         });
         
-        
-        var fullDates = [];
+        var fullWeekDates = [];
         
         function addZero(val) {
           return val < 10 ? '0' + val : val;
         }
         
+        function formatDate(dt) {
+          return addZero(dt.getMonth() + 1) + '/' + addZero(dt.getDate()) + '/' + dt.getFullYear();
+        }
+        
         if (sortedDates.length > 0) {
-          var startDate = new Date(sortedDates[0]);
-          var endDate = new Date(sortedDates[sortedDates.length - 1]);
+          var firstDate = new Date(sortedDates[0]);
           
-          while (startDate <= endDate) {
-            var mm = addZero(startDate.getMonth() + 1);
-            var dd = addZero(startDate.getDate());
-            var yyyy = startDate.getFullYear();
-            
-            fullDates.push(mm + '/' + dd + '/' + yyyy);
-            
-            startDate.setDate(startDate.getDate() + 1);
+          // get Sunday as start of week
+          var weekStart = new Date(firstDate);
+          weekStart.setDate(firstDate.getDate() - firstDate.getDay());
+          
+          // build full 7 days
+          for (var i = 0; i < 7; i++) {
+            var currentDate = new Date(weekStart);
+            currentDate.setDate(weekStart.getDate() + i);
+            fullWeekDates.push(formatDate(currentDate));
           }
         }
         
-        sortedDates = fullDates;
+        log.debug('fullWeekDates', fullWeekDates);
+        
+        sortedDates = fullWeekDates;
         
         // Grouping final output by groupType
         const groupedFinalArray = {};
