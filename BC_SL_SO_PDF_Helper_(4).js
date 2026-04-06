@@ -136,12 +136,13 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/file', 'N/encode', 'N/runti
         
         if (sortedDates.length > 0) {
           var firstDate = new Date(sortedDates[0]);
+          var day = firstDate.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
           
-          // get Sunday as start of week
+          var diffToMonday = (day === 0) ? -6 : (1 - day);
+          
           var weekStart = new Date(firstDate);
-          weekStart.setDate(firstDate.getDate() - firstDate.getDay());
+          weekStart.setDate(firstDate.getDate() + diffToMonday);
           
-          // build full 7 days
           for (var i = 0; i < 7; i++) {
             var currentDate = new Date(weekStart);
             currentDate.setDate(weekStart.getDate() + i);
