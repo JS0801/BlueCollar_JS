@@ -674,7 +674,7 @@ if (replaceLabor){
                 var day = labor[q].days[w] || '';
                 html += `<td align="center" style = "background-color:#3a4b87; color:white; font-weight:bold; ">${((Math.round((day.hours || 0) * 100) / 100) === 0 ? '-' : (Math.round(day.hours * 100) / 100))}</td>`
               }
-              html += `<td align = "center" style = "background-color:#3a4b87; color:white; font-weight:bold; > ${((Math.round((labor[q].totalWeek || 0) * 100) / 100) === 0 ? '-' : (Math.round(labor[q].totalWeek * 100) / 100))}</td>
+              html += `<td align = "center" style = "background-color:#3a4b87; color:white; font-weight:bold;" > ${((Math.round((labor[q].totalWeek || 0) * 100) / 100) === 0 ? '-' : (Math.round(labor[q].totalWeek * 100) / 100))}</td>
                <td colspan="${12 - labor[q].days.length}" style = "border:0px solid #000;"></td>
               </tr>`
               }else{
