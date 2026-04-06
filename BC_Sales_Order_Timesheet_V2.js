@@ -570,7 +570,7 @@ define([
       return true;
     });
     
-    var sortedDates = Array.from(uniqueDates).sort(function(a, b) {
+    var sortedDates = Object.keys(uniqueDates).sort(function(a, b) {
       return new Date(a) - new Date(b);
     });
     
