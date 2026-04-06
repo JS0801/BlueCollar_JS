@@ -669,14 +669,13 @@ if (replaceLabor){
               if (q == labor.length - 1) {
                 html += `<tr>
                 <td colspan="5" style = "border:0px solid #000;"></td>
-              <td align = "center" ></td>
               <td align = "center" style = "background-color:#3a4b87; color:white; font-weight:bold; border:0px solid #000;">Total</td>`;
               for (var w = 0; w < labor[q].days.length; w++) {
                 var day = labor[q].days[w] || '';
                 html += `<td align="center" style = "background-color:#3a4b87; color:white; font-weight:bold; ">${((Math.round((day.hours || 0) * 100) / 100) === 0 ? '-' : (Math.round(day.hours * 100) / 100))}</td>`
               }
               html += `<td align = "center" style = "background-color:#3a4b87; color:white; font-weight:bold; > ${((Math.round((labor[q].totalWeek || 0) * 100) / 100) === 0 ? '-' : (Math.round(labor[q].totalWeek * 100) / 100))}</td>
-              
+               <td colspan="${12 - labor[q].days.length}" style = "border:0px solid #000;"></td>
               </tr>`
               }else{
                 html += `<tr>
@@ -737,6 +736,7 @@ if (replaceLabor){
                     html += `<td align = "center" style = "background-color:#3a4b87; color:white; font-weight:bold; border:0px solid #000;">${((Math.round((d.hours || 0) * 100) / 100) === 0 ? '-' : (Math.round(d.hours * 100) / 100))}</td>`
                   }
                   html += `<td align = "center" style = "background-color:#3a4b87; color:white; font-weight:bold; border:0px solid #000;">${((Math.round((row.totalWeek || 0) * 100) / 100) === 0 ? '-' : (Math.round(row.totalWeek * 100) / 100))}</td>
+                  <td colspan="${14 - row.days.length}" style = "border:0px solid #000;"></td>
                   </tr>`
                 }else{
                   html += `<tr>
