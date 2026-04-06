@@ -580,7 +580,7 @@ if (replaceLabor){
             </tr>
             <tr>
             <td class="info-header" colspan = "2">Week-Ending:</td>
-            <td style="border:1px solid #000;" colspan = "4">${formatDateMMDDYYYY(weekEnding)}</td>
+            <td style="border:1px solid #000; mso-number-format:\\@;" colspan = "4">${formatDateMMDDYYYY(weekEnding)}</td>
             </tr>
             <tr>
             <td class="info-header" colspan = "2">C2O Project Manager:</td>
@@ -668,13 +668,13 @@ if (replaceLabor){
               html += `<tr>
               <td colspan="2">${labor[q].employee}</td>
               <td colspan="2">${labor[q].role}</td>
-              <td>${labor[q].shiftType}</td>
-              <td>${labor[q].shift}</td>`;
+              <td align = "center">${labor[q].shiftType}</td>
+              <td align = "center">${labor[q].shift}</td>`;
               for (var w = 0; w < labor[q].days.length; w++) {
                 var day = labor[q].days[w] || '';
-                html += `<td>${day.hours}</td>`
+                html += `<td align="center">${((Math.round((day.hours || 0) * 10) / 10) === 0 ? '-' : (Math.round(day.hours * 10) / 10))}</td>`
               }
-              html += `<td>${labor[q].totalWeek}</td>
+              html += `<td align = "center"> ${((Math.round((labor[q].totalWeek || 0) * 100) / 100) === 0 ? '-' : (Math.round(labor[q].totalWeek * 100) / 100))}</td>
               <td colspan="${12 - labor[q].days.length}"></td>
               </tr>`
             }
@@ -716,9 +716,10 @@ if (replaceLabor){
                 <td colspan="4">${row.role}</td>`;
                 for (var t = 0; t < row.days.length; t++) {
                   var d = row.days[t]
-                  html += `<td>${d.hours}</td>`
+                  
+                  html += `<td align = "center">${((Math.round((d.hours || 0) * 10) / 10) === 0 ? '-' : (Math.round(d.hours * 10) / 10))}</td>`
                 }
-                html += `<td>${row.totalWeek}</td>
+                html += `<td align = "center">${((Math.round((row.totalWeek || 0) * 100) / 100) === 0 ? '-' : (Math.round(row.totalWeek * 100) / 100))}</td>
                 <td colspan="${14 - row.days.length}"></td>
                 </tr>`
               }
@@ -741,9 +742,9 @@ if (replaceLabor){
                 var m = x.Materials[p];
                 if (m.documentNumber == 'TOTAL'){
                    html += `<tr>
-                  <td colspan="13" style = "border:0px solid #000;"></td>
-                  <td colspan="2" align="right" style = "background-color:#3a4b87; color:white; font-weight:bold;">Total</td>
-                  <td align="right">${m.cost}</td>
+                  <td colspan="5" style = "background-color:#3a4b87; color:white; font-weight:bold; border:0px solid #000;" align = "center">Total</td>
+                  <td colspan="13" ></td>
+                  <td align="right" style = "background-color:#3a4b87; color:white; font-weight:bold; border:0px solid #000; mso-number-format:\\0022$\\0022\\#\\,\\#\\#0\\.00;" >${m.cost}</td>
                   </tr>`
                 }else {
                 html += `<tr>
@@ -751,7 +752,7 @@ if (replaceLabor){
                 <td colspan="3">${m.mainName}</td>
                 <td colspan="2">${m.cleanedPO}</td>
                 <td colspan="8">${m.memo}</td>
-                <td align="right">${m.cost}</td>
+                <td align="right" style = "mso-number-format:\\0022$\\0022\\#\\,\\#\\#0\\.00;">${m.cost}</td>
                 </tr>`}
               }
               html += `</table>`;
@@ -771,16 +772,16 @@ if (replaceLabor){
                 var e = x.Expenses[a];
                 if (e.documentNumber == 'TOTAL'){
                    html += `<tr>
-                   <td colspan="13" style = "border:0px solid #000;"></td>
-                  <td colspan="2" align="right" style = "background-color:#3a4b87; color:white; font-weight:bold;">Total</td>
-                  <td align="right">${e.cost}</td>
+                   <td colspan="5" style = "background-color:#3a4b87; color:white; font-weight:bold; border:0px solid #000; mso-number-format:\\0022$\\0022\\#\\,\\#\\#0\\.00;" >Total</td>
+                  <td colspan="10"></td>
+                  <td align="right" style = "background-color:#3a4b87; color:white; font-weight:bold; border:0px solid #000; mso-number-format:\\0022$\\0022\\#\\,\\#\\#0\\.00;"  >${e.cost}</td>
                   </tr>`
                 }else {
                   html += `<tr>
                 <td colspan="5">${e.expCat}</td>
                 <td colspan="2">${e.cleanedPO}</td>
                 <td colspan="8">${e.memo}</td>
-                <td align="right">${e.cost}</td>
+                <td align="right" style = "mso-number-format:\\0022$\\0022\\#\\,\\#\\#0\\.00;">${e.cost}</td>
                 </tr>`
                 }
                   
