@@ -456,17 +456,20 @@ define(['N/ui/serverWidget', 'N/search', 'N/log', 'N/file', 'N/encode', 'N/runti
         // -------------------------------------------------------
         // BUILD TIME TYPE LEGEND from groupedFinalArray
         // -------------------------------------------------------
+
         var TIME_LEGEND_MAP = {
-          'ST':       'Standard Time',
-          'OT':       'Overtime',
-          'DT':       'Double Time',
-          'PT':       'Part Time',
-          'PTO':      'Paid Time Off',
-          'Per Diem': 'Per Diem Allowance',
-          'DR1':      'Day Rate 1',
-          'DR2':      'Day Rate 2',
-          'DR3':      'Day Rate 3'
-        };
+      'ST': 'Standard Time',
+      'OT': 'Overtime',
+      'DT': 'Double Time',
+      'PT': 'Premium Time',
+      'PTO': 'Paid Time Off',
+      'Per Diem': 'Per Diem Allowance',
+      'DR1': 'Day Rate 1',
+      'DR2': 'Day Rate 2',
+      'DR3': 'Day Rate 3',
+      'DR1-OT': 'Day Rate 1 Overtime',
+      'DR2-OT': 'Day Rate 2 Overtime'
+    };
         
         var seenTypes = {};
         var legendArray = [];
