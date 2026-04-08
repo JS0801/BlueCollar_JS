@@ -32,8 +32,8 @@ define(['N/ui/serverWidget', 'N/url', 'N/search', 'N/record'], function(ui, url,
             label: "Internal ID"
         }),
         search.createColumn({
-            name: "trandate",
-            join: "CUSTBODY_ASSOCIATED_SALES_ORDERS",
+            name: "formulatext",
+            formula: "TO_CHAR({CUSTBODY_ASSOCIATED_SALES_ORDERS.trandate}, 'MM/DD/YYYY')",
             label: "Date",
             sort: search.Sort.ASC
         })
@@ -48,8 +48,7 @@ salesorderSearchObj.run().each(function (result) {
     });
   if (id) {
     const date = result.getValue({
-        name: "trandate",
-        join: "CUSTBODY_ASSOCIATED_SALES_ORDERS"
+        name: "formulatext"
     });
     results.push({ id: id, date: new Date(date) });
   }
