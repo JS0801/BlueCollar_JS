@@ -152,7 +152,7 @@ salesorderSearchObj.run().each(function (result) {
           var url='" + scriptUrlv2 + "&export=excel&tranid=" + internalIdString + "';\
           var d=new Date(), yyyy=d.getFullYear(), mm=('0'+(d.getMonth()+1)).slice(-2), dd=('0'+d.getDate()).slice(-2);\
           var filename='Weekly_Timesheet_'+yyyy+'-'+mm+'-'+dd+'_" + recordId + ".xls';\
-          var failTimer=setTimeout(rm,4000); /* failsafe cleanup */ \
+          var failTimer=setTimeout(rm,10000); /* failsafe cleanup */ \
           fetch(url,{credentials:'include'}).then(function(r){\
             if(!r.ok) throw new Error(r.statusText);\
             return r.blob();\
